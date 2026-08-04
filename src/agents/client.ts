@@ -132,7 +132,8 @@ export class StructuredAgentSession {
       } catch (error) {
         lastError = error;
         currentPrompt =
-          "Your previous response failed JSON schema validation. Return only a corrected complete JSON object.";
+          "Your previous response failed JSON schema validation. Return only a corrected complete JSON object.\n" +
+          `Validation error: ${String(error).slice(0, 2_000)}`;
       }
     }
     throw new Error("Agent failed structured output validation twice.", {
@@ -171,7 +172,10 @@ export class AgentClient {
         return options.schema.parse(extractJson(assertFinished(result)));
       } catch (error) {
         lastError = error;
-        prompt = `${options.prompt}\n\nYour previous response failed validation. Return only corrected JSON matching every requested field.`;
+        prompt =
+          `${options.prompt}\n\nYour previous response failed validation. ` +
+          `Return only corrected JSON matching every requested field.\n` +
+          `Validation error: ${String(error).slice(0, 2_000)}`;
       }
     }
     throw new Error("Agent failed structured output validation twice.", {

@@ -66,6 +66,13 @@ jobs:
             npm run research
           fi
 
+      - name: Save research checkpoints
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/checkpoints
+          key: research-checkpoints-${{ github.run_id }}
+
       - name: Commit report data
         run: |
           git add -- data/reports

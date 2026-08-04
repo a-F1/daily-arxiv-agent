@@ -151,7 +151,7 @@ export const RefinementSchema = z
   .object({
     round: z.number().int().positive(),
     originalIdeaTitle: NonEmptyString,
-    critiquesAddressed: z.array(NonEmptyString).min(1),
+    critiquesAddressed: z.array(NonEmptyString),
     revisedHypothesis: NonEmptyString,
     revisedMethod: z.array(NonEmptyString).min(1),
     decision: z.enum(["accept", "revise", "reject"]),
