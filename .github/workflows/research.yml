@@ -29,6 +29,8 @@ jobs:
       CURSOR_CLAUDE_MODEL: ${{ vars.CURSOR_CLAUDE_MODEL }}
       CURSOR_OPENAI_MODEL: ${{ vars.CURSOR_OPENAI_MODEL }}
       OPENALEX_EMAIL: ${{ vars.OPENALEX_EMAIL }}
+      MAX_DAILY_TOKENS: ${{ vars.MAX_DAILY_TOKENS || '10000000' }}
+      MAX_DAILY_RUNS: ${{ vars.MAX_DAILY_RUNS || '180' }}
       TZ: America/New_York
     steps:
       - name: Check out repository

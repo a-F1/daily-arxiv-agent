@@ -26,6 +26,7 @@ export async function debateIdea(options: {
   client: AgentClient;
   idea: ResearchIdea;
   references?: readonly unknown[];
+  initialTurns?: readonly DebateTurn[];
   advocateModel: ModelSelection;
   skepticModel: ModelSelection;
   moderatorModel?: ModelSelection;
@@ -37,7 +38,7 @@ export async function debateIdea(options: {
   ) => void | Promise<void>;
 }): Promise<DebateOutcome> {
   const moderatorModel = options.moderatorModel ?? options.advocateModel;
-  const turns: DebateTurn[] = [];
+  const turns: DebateTurn[] = [...(options.initialTurns ?? [])];
 
   return options.client.withSession({
     model: options.advocateModel,
@@ -48,9 +49,12 @@ export async function debateIdea(options: {
         name: `daily-arxiv skeptic ${options.idempotencyPrefix}`,
         task: async (skeptic) => {
           let finalDecision: Debate | undefined;
-          let completedRounds = 0;
+          let completedRounds = turns.reduce(
+            (maximum, turn) => Math.max(maximum, turn.round),
+            0,
+          );
 
-          for (let round = 1; round <= 5; round += 1) {
+          for (let round = completedRounds + 1; round <= 5; round += 1) {
             turns.push(
               await advocate.send(
                 debateTurnPrompt({
@@ -103,6 +107,20 @@ export async function debateIdea(options: {
             if (round === 5 || !requestsExtension(finalDecision)) break;
           }
 
+          if (!finalDecision && completedRounds >= 3) {
+            finalDecision = await options.client.promptJson({
+              prompt: debateDecisionPrompt({
+                idea: options.idea,
+                references: options.references,
+                turns,
+                round: completedRounds,
+                mayExtend: false,
+              }),
+              schema: DebateSchema,
+              model: moderatorModel,
+              idempotencyKey: `${options.idempotencyPrefix}:debate:${completedRounds}:resume-decision`,
+            });
+          }
           if (!finalDecision) {
             throw new Error("Debate completed without a moderator decision.");
           }

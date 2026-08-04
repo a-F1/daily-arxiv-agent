@@ -12,6 +12,7 @@ import { DOMAINS } from "../domains.js";
 import {
   DailyReportSchema,
   type DailyReport,
+  type DebateTurn,
   type Domain,
   type DomainId,
   type DomainResearch,
@@ -40,6 +41,7 @@ interface DomainCheckpoint {
   idea?: IdeaResult;
   ideaProgress?: IdeaCheckpoint;
   debate?: DebateOutcome;
+  debateTurns?: DebateTurn[];
   debateAttempts?: number;
 }
 
@@ -129,6 +131,11 @@ function inputHash(options: DailyRunOptions): string {
     .digest("hex");
 }
 
+function positiveIntegerEnv(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isSafeInteger(value) && value > 0 ? value : fallback;
+}
+
 async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
   if (!options.apiKey.trim()) throw new Error("CURSOR_API_KEY is required.");
   const now = options.now ?? (() => new Date());
@@ -145,7 +152,10 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
   }
 
   const budget = new RunBudget(
-    { maxRuns: 120, maxTokens: 3_000_000 },
+    {
+      maxRuns: positiveIntegerEnv("MAX_DAILY_RUNS", 180),
+      maxTokens: positiveIntegerEnv("MAX_DAILY_TOKENS", 10_000_000),
+    },
     existing?.budget,
   );
   const models =
@@ -223,6 +233,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
           searchPriorArt: options.searchPriorArt,
           idempotencyPrefix: `${options.date}:${domain.id}:idea:${attempt}`,
           maxRestarts: 4,
+          maxReferences: 30,
           onCheckpoint: async (progress) => {
             domainState.ideaProgress = progress;
             await persist();
@@ -239,12 +250,17 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
           client,
           idea: domainState.idea.idea,
           references: domainState.idea.ledger,
+          initialTurns: domainState.debateTurns,
           advocateModel: models.claude,
           skepticModel: models.openai,
           moderatorModel: models.claude,
           idempotencyPrefix: `${options.date}:${domain.id}:debate:${attempt}`,
-          onRound: persist,
+          onRound: async (_round, turns) => {
+            domainState.debateTurns = [...turns];
+            await persist();
+          },
         });
+        delete domainState.debateTurns;
         await persist();
       }
       if (domainState.debate.result.approved) break;
