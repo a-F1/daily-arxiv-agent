@@ -1,0 +1,155 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PaperCard from "../../components/PaperCard.astro";
+import { formatDate, reports, type Report } from "../../lib/reports";
+
+export function getStaticPaths() {
+  return reports.map((report) => ({
+    params: { date: report.date },
+    props: { report },
+  }));
+}
+
+interface Props {
+  report: Report;
+}
+
+const { report } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const generated = report.generatedAt
+  ? new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.generatedAt))
+  : undefined;
+---
+
+<Layout
+  title={`${formatDate(report.date)}研究简报 · 每日 arXiv`}
+  description={`${formatDate(report.date)} arXiv 精选论文与研究分析。`}
+>
+  <header class="report-banner">
+    <div class="shell">
+      <a class="back-link" href={`${base}archive/`}>← 返回全部简报</a>
+      <div class="report-title-row">
+        <div>
+          <p class="eyebrow">DAILY RESEARCH REPORT</p>
+          <h1>{formatDate(report.date)}</h1>
+        </div>
+        <span class="domain-tag">{report.papers.length} 篇精选</span>
+      </div>
+      <div class="report-provenance" aria-label="报告来源信息">
+        {generated && <span>生成于 {generated}</span>}
+        {report.model && <span>模型 {report.model}</span>}
+        {report.query && <span>检索 {report.query}</span>}
+        <span>来源 arXiv</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell report-content">
+    <div class="paper-list">
+      {report.papers.map((paper, index) => (
+        <div id={`paper-${index + 1}`}>
+          <PaperCard paper={paper} index={index} expanded />
+          {(paper.ideas.length > 0 ||
+            paper.refinements.length > 0 ||
+            paper.debate.length > 0 ||
+            paper.references.length > 0) && (
+            <section class="analysis-block" aria-label={`${paper.title} 的研究延伸`}>
+              <h3>从论文到下一步研究</h3>
+              <div class="analysis-grid">
+                <div class="analysis-panel">
+                  <b>💡 可延伸的想法</b>
+                  {paper.ideas.length ? (
+                    <ul>{paper.ideas.map((idea) => <li>{idea}</li>)}</ul>
+                  ) : (
+                    <p>暂无补充。</p>
+                  )}
+                </div>
+                <div class="analysis-panel">
+                  <b>↗ 方法改进</b>
+                  {paper.refinements.length ? (
+                    <ul>{paper.refinements.map((item) => <li>{item}</li>)}</ul>
+                  ) : (
+                    <p>暂无补充。</p>
+                  )}
+                </div>
+                <div class="analysis-panel">
+                  <b>⚖ 值得争论</b>
+                  {paper.debate.length ? (
+                    <ul>{paper.debate.map((item) => <li>{item}</li>)}</ul>
+                  ) : (
+                    <p>暂无补充。</p>
+                  )}
+                </div>
+              </div>
+              {paper.references.length > 0 && (
+                <div class="references">
+                  <b>相关参考</b>
+                  <ul>
+                    {paper.references.map((reference) => (
+                      <li>
+                        {reference.url ? (
+                          <a href={reference.url} target="_blank" rel="noreferrer">{reference.title}</a>
+                        ) : (
+                          reference.title
+                        )}
+                        {reference.authors?.length ? ` — ${reference.authors.join(", ")}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      ))}
+      {report.papers.length === 0 && (
+        <div class="empty-state">
+          <h2>本期暂无入选论文</h2>
+          <p>自动筛选没有找到满足条件的论文。</p>
+        </div>
+      )}
+      {report.domainResearch.map((research) => (
+        <section class="analysis-block" data-pagefind-body>
+          <h2>{research.domain} · 可行研究 Idea</h2>
+          <p class="eyebrow">{research.rounds} 轮 Claude / OpenAI debate</p>
+          <div class="analysis-grid">
+            <div class="analysis-panel">
+              <b>最终方案与可行性</b>
+              <ul>{research.idea.map((item) => <li>{item}</li>)}</ul>
+            </div>
+            <div class="analysis-panel">
+              <b>Refine 记录</b>
+              <ul>{research.refinements.map((item) => <li>{item}</li>)}</ul>
+            </div>
+            <div class="analysis-panel">
+              <b>模型 Debate</b>
+              <ul>{research.debate.map((item) => <li>{item}</li>)}</ul>
+            </div>
+          </div>
+          {research.references.length > 0 && (
+            <div class="references">
+              <b>所有轮次参考论文</b>
+              <ul>
+                {research.references.map((reference) => (
+                  <li>
+                    {reference.url ? (
+                      <a href={reference.url} target="_blank" rel="noreferrer">{reference.title}</a>
+                    ) : reference.title}
+                    {reference.authors?.length ? ` — ${reference.authors.join(", ")}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      ))}
+    </div>
+
+    <aside class="report-nav" aria-label="本期论文目录">
+      <b>本期目录</b>
+      {report.papers.map((paper, index) => (
+        <a href={`#paper-${index + 1}`}>{String(index + 1).padStart(2, "0")} · {paper.titleZh || paper.title}</a>
+      ))}
+    </aside>
+  </div>
+</Layout>

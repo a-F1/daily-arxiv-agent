@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.astro/
+.pagefind/
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.log
+coverage/
+.daily-arxiv/
+
+data/checkpoints/*
+!data/checkpoints/.gitkeep

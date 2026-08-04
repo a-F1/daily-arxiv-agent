@@ -1,0 +1,45 @@
+{
+  "name": "daily-arxiv-agent",
+  "version": "0.1.0",
+  "description": "Daily arXiv research briefings and multi-model idea debates.",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "research": "tsx src/pipeline/run.ts"
+  },
+  "keywords": [
+    "arxiv",
+    "research",
+    "agents"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "@cursor/sdk": "^1.0.26",
+    "astro": "^7.1.6",
+    "fast-xml-parser": "^5.10.1",
+    "luxon": "^3.7.2",
+    "p-limit": "^7.3.1",
+    "pdfjs-dist": "^6.2.108",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/luxon": "^3.7.3",
+    "@types/node": "^26.1.2",
+    "pagefind": "^1.5.2",
+    "tsx": "^4.23.5",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "undici": "^6.28.0"
+  }
+}

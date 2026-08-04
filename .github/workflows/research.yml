@@ -1,0 +1,79 @@
+name: Daily arXiv research
+
+on:
+  schedule:
+    # Idempotent checks cover EDT/EST, moderation delays, and Actions delays.
+    - cron: "17 1 * * 1-5"
+    - cron: "17 2 * * 1-5"
+    - cron: "17 6 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Report date override (YYYY-MM-DD); blank uses the latest announcement"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-arxiv-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      CURSOR_CLAUDE_MODEL: ${{ vars.CURSOR_CLAUDE_MODEL }}
+      CURSOR_OPENAI_MODEL: ${{ vars.CURSOR_OPENAI_MODEL }}
+      OPENALEX_EMAIL: ${{ vars.OPENALEX_EMAIL }}
+      TZ: America/New_York
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore resumable research checkpoints
+        uses: actions/cache@v4
+        with:
+          path: data/checkpoints
+          key: research-checkpoints-${{ github.run_id }}
+          restore-keys: |
+            research-checkpoints-
+
+      - name: Validate pipeline
+        run: npm run check && npm test
+
+      - name: Generate research report
+        env:
+          REPORT_DATE: ${{ inputs.date }}
+        run: |
+          if [ -n "$REPORT_DATE" ]; then
+            npm run research -- --date "$REPORT_DATE"
+          else
+            npm run research
+          fi
+
+      - name: Commit report data
+        run: |
+          git add -- data/reports
+          if git diff --cached --quiet; then
+            echo "No new report data to commit."
+            exit 0
+          fi
+          git config user.name "daily-arxiv[bot]"
+          git config user.email "daily-arxiv[bot]@users.noreply.github.com"
+          git commit -m "data: add daily arXiv report"
+          git push

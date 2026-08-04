@@ -1,0 +1,132 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "每日 arXiv 研究简报",
+  description = "用研究智能体筛选、解读和碰撞每天值得关注的 arXiv 论文。",
+} = Astro.props;
+const base = import.meta.env.BASE_URL;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const home = base;
+const archive = `${base}archive/`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f5f2ea" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={`data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23152525%22/><path d=%22M17 45 30 17h5l12 28h-7l-3-8H27l-3 8Zm12-14h6l-3-8Z%22 fill=%22%23f2bd5a%22/></svg>`} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href={home} aria-label="每日 arXiv 首页">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span><b>每日 arXiv</b><small>RESEARCH NOTES</small></span>
+        </a>
+        <nav aria-label="主要导航">
+          <a href={home} aria-current={Astro.url.pathname === base ? "page" : undefined}>最新</a>
+          <a href={archive} aria-current={Astro.url.pathname.includes("/archive") ? "page" : undefined}>归档</a>
+          <button class="search-trigger" type="button" data-search-open aria-label="打开搜索">
+            <span aria-hidden="true">⌕</span> 搜索
+          </button>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer>
+      <div class="shell footer-inner">
+        <p><b>每日 arXiv</b> · 面向研究者的每日论文观察</p>
+        <p>内容由 AI 辅助生成，请以原论文为准。</p>
+      </div>
+    </footer>
+
+    <dialog class="search-dialog" data-search-dialog aria-labelledby="search-title">
+      <div class="search-dialog-head">
+        <div>
+          <p class="eyebrow">全文检索</p>
+          <h2 id="search-title">搜索研究简报</h2>
+        </div>
+        <button type="button" data-search-close aria-label="关闭搜索">×</button>
+      </div>
+      <label class="search-box">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" data-search-input placeholder="输入论文、作者或研究方向…" autocomplete="off" />
+      </label>
+      <p class="search-status" data-search-status>输入关键词开始搜索。</p>
+      <div class="search-results" data-search-results aria-live="polite"></div>
+    </dialog>
+
+    <script is:inline define:vars={{ base }}>
+      const dialog = document.querySelector("[data-search-dialog]");
+      const input = document.querySelector("[data-search-input]");
+      const status = document.querySelector("[data-search-status]");
+      const results = document.querySelector("[data-search-results]");
+      let pagefind;
+
+      document.querySelector("[data-search-open]")?.addEventListener("click", () => {
+        dialog?.showModal();
+        input?.focus();
+      });
+      document.querySelector("[data-search-close]")?.addEventListener("click", () => dialog?.close());
+      dialog?.addEventListener("click", (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+
+      async function loadSearch() {
+        if (pagefind) return pagefind;
+        try {
+          pagefind = await import(`${base}pagefind/pagefind.js`);
+          await pagefind.init();
+          return pagefind;
+        } catch {
+          status.textContent = "搜索索引尚未生成。完成首次生产构建后即可使用全文搜索。";
+          return null;
+        }
+      }
+
+      let timer;
+      input?.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const query = input.value.trim();
+          results.replaceChildren();
+          if (!query) {
+            status.textContent = "输入关键词开始搜索。";
+            return;
+          }
+          status.textContent = "正在搜索…";
+          const engine = await loadSearch();
+          if (!engine) return;
+          const search = await engine.search(query);
+          const items = await Promise.all(search.results.slice(0, 8).map((item) => item.data()));
+          status.textContent = items.length ? `找到 ${search.results.length} 条结果` : "没有找到相关内容。";
+          items.forEach((item) => {
+            const link = document.createElement("a");
+            link.className = "search-result";
+            link.href = item.url;
+            const title = document.createElement("b");
+            title.textContent = item.meta.title || "未命名页面";
+            const excerpt = document.createElement("span");
+            excerpt.innerHTML = item.excerpt;
+            link.append(title, excerpt);
+            results.append(link);
+          });
+        }, 180);
+      });
+    </script>
+  </body>
+</html>

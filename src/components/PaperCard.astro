@@ -1,0 +1,42 @@
+---
+import type { Paper } from "../lib/reports";
+
+interface Props {
+  paper: Paper;
+  index: number;
+  expanded?: boolean;
+}
+
+const { paper, index, expanded = false } = Astro.props;
+const displayTitle = paper.titleZh || paper.title;
+const summary = paper.summaryZh || paper.summary || "暂无摘要。";
+---
+
+<article
+  class:list={["paper-card", { "paper-card--expanded": expanded }]}
+  data-paper-card
+  data-domain={paper.domain}
+  data-pagefind-body
+>
+  <div class="paper-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</div>
+  <div class="paper-main">
+    <div class="paper-meta">
+      <span class="domain-tag">{paper.domain}</span>
+      {paper.id && <span>{paper.id}</span>}
+    </div>
+    <h2 data-pagefind-meta="title">{displayTitle}</h2>
+    {paper.titleZh && <p class="original-title" lang="en">{paper.title}</p>}
+    {paper.authors.length > 0 && <p class="authors">{paper.authors.join(" · ")}</p>}
+    <p class="paper-summary">{summary}</p>
+    {paper.whyItMatters && (
+      <div class="why-note">
+        <b>为什么值得关注</b>
+        <p>{paper.whyItMatters}</p>
+      </div>
+    )}
+    <div class="paper-actions">
+      {paper.url && <a class="button button--dark" href={paper.url} target="_blank" rel="noreferrer">查看 arXiv ↗</a>}
+      {paper.pdfUrl && <a class="button button--plain" href={paper.pdfUrl} target="_blank" rel="noreferrer">PDF</a>}
+    </div>
+  </div>
+</article>

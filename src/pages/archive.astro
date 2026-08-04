@@ -1,0 +1,82 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { domains, formatDate, reports } from "../lib/reports";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<Layout title="简报归档 · 每日 arXiv" description="按日期和研究领域浏览每日 arXiv 研究简报。">
+  <header class="page-hero shell">
+    <p class="eyebrow">REPORT ARCHIVE</p>
+    <h1>研究简报归档</h1>
+    <p>按日期与研究方向回看每日精选。全文检索可从页面右上角打开。</p>
+  </header>
+
+  <section class="section" style="padding-top: 10px" aria-label="归档筛选">
+    <div class="shell">
+      <div class="filters">
+        <label class="filter-field">
+          <span>日期</span>
+          <input type="month" data-date-filter aria-label="按月份筛选" />
+        </label>
+        <label class="filter-field">
+          <span>研究领域</span>
+          <select data-domain-filter aria-label="按研究领域筛选">
+            <option value="">全部领域</option>
+            {domains.map((domain) => <option value={domain}>{domain}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div class="archive-list" data-archive-list>
+        {reports.map((report) => {
+          const reportDomains = [...new Set(report.papers.map((paper) => paper.domain))];
+          return (
+            <a
+              class="archive-row"
+              href={`${base}reports/${report.date}/`}
+              data-date={report.date}
+              data-domains={reportDomains.join("|")}
+            >
+              <span class="archive-date">{formatDate(report.date)}</span>
+              <span class="archive-domains">
+                {reportDomains.slice(0, 4).map((domain) => <span class="domain-tag">{domain}</span>)}
+              </span>
+              <span class="archive-count">{report.papers.length} 篇 →</span>
+            </a>
+          );
+        })}
+      </div>
+      {reports.length === 0 && (
+        <div class="empty-state" style="margin-top: 24px">
+          <span class="empty-icon" aria-hidden="true">⌁</span>
+          <h2>尚无历史简报</h2>
+          <p>首份报告生成后会自动加入归档。</p>
+        </div>
+      )}
+      <p class="no-results" data-no-results>没有符合当前筛选条件的简报。</p>
+    </div>
+  </section>
+
+  <script>
+    const dateFilter = document.querySelector<HTMLInputElement>("[data-date-filter]");
+    const domainFilter = document.querySelector<HTMLSelectElement>("[data-domain-filter]");
+    const rows = [...document.querySelectorAll<HTMLElement>("[data-archive-list] [data-date]")];
+    const noResults = document.querySelector<HTMLElement>("[data-no-results]");
+
+    function filterReports() {
+      const month = dateFilter?.value ?? "";
+      const domain = domainFilter?.value ?? "";
+      let shown = 0;
+      rows.forEach((row) => {
+        const matchesDate = !month || (row.dataset.date ?? "").startsWith(month);
+        const matchesDomain = !domain || (row.dataset.domains ?? "").split("|").includes(domain);
+        row.hidden = !(matchesDate && matchesDomain);
+        if (!row.hidden) shown += 1;
+      });
+      if (noResults) noResults.style.display = rows.length > 0 && shown === 0 ? "block" : "none";
+    }
+    dateFilter?.addEventListener("change", filterReports);
+    domainFilter?.addEventListener("change", filterReports);
+  </script>
+</Layout>

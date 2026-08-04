@@ -1,0 +1,54 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PaperCard from "../components/PaperCard.astro";
+import { formatDate, reports } from "../lib/reports";
+
+const latest = reports[0];
+const base = import.meta.env.BASE_URL;
+const archiveHref = `${base}archive/`;
+const reportHref = latest ? `${base}reports/${latest.date}/` : archiveHref;
+---
+
+<Layout>
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">AI-CURATED · DAILY RESEARCH BRIEF</p>
+        <h1>把每天的新论文，<br />变成<em>下一步研究。</em></h1>
+        <p class="hero-copy">
+          不止摘要。研究智能体每日追踪 arXiv，提炼关键发现、可改进之处和值得争论的问题，
+          帮你更快找到真正值得读的工作。
+        </p>
+      </div>
+      <div class="hero-stat">
+        <b>{latest?.papers.length ?? 0}</b>
+        <span>{latest ? `${formatDate(latest.date)} 精选论文` : "等待首期研究简报"}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="latest-heading">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">LATEST REPORT</p>
+          <h2 id="latest-heading">{latest ? formatDate(latest.date) : "最新简报"}</h2>
+          {latest && <p>从今日论文中筛选出 {latest.papers.length} 项值得关注的研究。</p>}
+        </div>
+        {latest && <a class="text-link" href={reportHref}>阅读完整分析 →</a>}
+      </div>
+
+      {latest ? (
+        <div class="paper-list">
+          {latest.papers.slice(0, 4).map((paper, index) => <PaperCard paper={paper} index={index} />)}
+        </div>
+      ) : (
+        <div class="empty-state">
+          <span class="empty-icon" aria-hidden="true">⌁</span>
+          <h2>首期简报正在准备中</h2>
+          <p>自动化完成第一次运行后，最新论文与研究分析会出现在这里。网站在没有数据时也可正常构建和浏览。</p>
+        </div>
+      )}
+    </div>
+  </section>
+</Layout>

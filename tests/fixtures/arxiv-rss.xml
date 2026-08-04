@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <channel>
+    <title>cs.RO updates</title>
+    <pubDate>Tue, 04 Aug 2026 00:30:00 -0400</pubDate>
+    <item>
+      <title>Vision-Language-Action Models for Mobile Manipulation</title>
+      <link>https://arxiv.org/abs/2608.04321v1</link>
+      <description><![CDATA[
+        We present a <b>robot policy</b> that maps visual and language observations to actions.
+      ]]></description>
+      <dc:creator>Grace Hopper, Katherine Johnson</dc:creator>
+      <category>cs.RO</category>
+      <category>cs.AI</category>
+      <arxiv:announce_type>new</arxiv:announce_type>
+    </item>
+  </channel>
+</rss>

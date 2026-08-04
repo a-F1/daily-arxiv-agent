@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <id>https://arxiv.org/api/test</id>
+  <updated>2026-08-04T12:00:00Z</updated>
+  <entry>
+    <id>http://arxiv.org/abs/2608.01234v2</id>
+    <updated>2026-08-04T10:00:00Z</updated>
+    <published>2026-08-03T18:00:00Z</published>
+    <title>  Tool-Using Agents for Long-Horizon Planning </title>
+    <summary> We introduce an agent with robust memory and tool use. </summary>
+    <author><name>Ada Lovelace</name><arxiv:affiliation>Example Lab</arxiv:affiliation></author>
+    <author><name>Alan Turing</name></author>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <arxiv:primary_category term="cs.AI"/>
+    <arxiv:comment>12 pages</arxiv:comment>
+    <arxiv:doi>10.1000/example</arxiv:doi>
+    <link href="https://arxiv.org/abs/2608.01234v2" rel="alternate" type="text/html"/>
+    <link title="pdf" href="https://arxiv.org/pdf/2608.01234v2" rel="related" type="application/pdf"/>
+  </entry>
+</feed>
