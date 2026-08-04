@@ -47,8 +47,15 @@ export function resolveConfiguredModel(
 
   const model = findExactModel(configuredId, available);
   if (!model) {
+    const candidates = available
+      .filter((candidate) =>
+        searchableNames(candidate).some((name) => PROVIDER_MARKERS[provider].test(name)),
+      )
+      .map((candidate) => candidate.id)
+      .slice(0, 20);
     throw new Error(
-      `Configured ${provider} model "${configuredId}" is not available to this Cursor account.`,
+      `Configured ${provider} model "${configuredId}" is not available to this Cursor account. ` +
+        `Available ${provider} candidates: ${candidates.join(", ") || "none"}.`,
     );
   }
 
