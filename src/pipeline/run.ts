@@ -367,8 +367,15 @@ export async function runCli(): Promise<void> {
     return;
   }
 
-  const apiKey = process.env.CURSOR_API_KEY;
-  if (!apiKey) throw new Error("CURSOR_API_KEY is required once new papers are selected.");
+  const rawApiKey = process.env.CURSOR_API_KEY;
+  if (!rawApiKey) {
+    throw new Error("CURSOR_API_KEY is required once new papers are selected.");
+  }
+  const apiKey = rawApiKey.replace(/[^\x21-\x7E]/g, "");
+  if (!apiKey) throw new Error("CURSOR_API_KEY contains no usable ASCII characters.");
+  if (apiKey !== rawApiKey) {
+    console.warn("Removed invisible copy/paste characters from CURSOR_API_KEY.");
+  }
   const paperTexts: Record<string, string> = {};
   for (const [index, item] of selected.entries()) {
     if (index > 0) await sleep(3_100);

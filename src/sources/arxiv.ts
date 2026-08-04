@@ -429,7 +429,11 @@ export async function extractPdfText(
   options: { maxPages?: number } = {},
 ): Promise<string> {
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const loadingTask = getDocument({ data, useWorkerFetch: false });
+  const loadingTask = getDocument({
+    data,
+    useWorkerFetch: false,
+    verbosity: 0,
+  });
   const document = await loadingTask.promise;
   try {
     const pages: string[] = [];
