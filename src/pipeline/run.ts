@@ -40,6 +40,7 @@ interface DomainCheckpoint {
   idea?: IdeaResult;
   ideaProgress?: IdeaCheckpoint;
   debate?: DebateOutcome;
+  debateAttempts?: number;
 }
 
 interface DailyCheckpoint {
@@ -206,36 +207,53 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
       });
     }
 
-    if (!domainState.idea) {
-      domainState.idea = await developIdea({
-        client,
-        model: models.openai,
-        summaries: domainState.summaries,
-        domainName: domain.name,
-        searchPriorArt: options.searchPriorArt,
-        idempotencyPrefix: `${options.date}:${domain.id}`,
-        maxRestarts: 4,
-        onCheckpoint: async (progress) => {
-          domainState.ideaProgress = progress;
-          await persist();
-        },
-      });
-      delete domainState.ideaProgress;
+    let rejectionFeedback =
+      domainState.debate?.result.approved === false
+        ? domainState.debate.result
+        : undefined;
+    while ((domainState.debateAttempts ?? 0) < 3) {
+      const attempt = domainState.debateAttempts ?? 0;
+      if (!domainState.idea || rejectionFeedback) {
+        domainState.idea = await developIdea({
+          client,
+          model: models.openai,
+          summaries: domainState.summaries,
+          domainName: domain.name,
+          rejectionFeedback,
+          searchPriorArt: options.searchPriorArt,
+          idempotencyPrefix: `${options.date}:${domain.id}:idea:${attempt}`,
+          maxRestarts: 4,
+          onCheckpoint: async (progress) => {
+            domainState.ideaProgress = progress;
+            await persist();
+          },
+        });
+        delete domainState.ideaProgress;
+        delete domainState.debate;
+        rejectionFeedback = undefined;
+        await persist();
+      }
+
+      if (!domainState.debate) {
+        domainState.debate = await debateIdea({
+          client,
+          idea: domainState.idea.idea,
+          references: domainState.idea.ledger,
+          advocateModel: models.claude,
+          skepticModel: models.openai,
+          moderatorModel: models.claude,
+          idempotencyPrefix: `${options.date}:${domain.id}:debate:${attempt}`,
+          onRound: persist,
+        });
+        await persist();
+      }
+      if (domainState.debate.result.approved) break;
+      rejectionFeedback = domainState.debate.result;
+      domainState.debateAttempts = attempt + 1;
       await persist();
     }
-
-    if (!domainState.debate) {
-      domainState.debate = await debateIdea({
-        client,
-        idea: domainState.idea.idea,
-        references: domainState.idea.ledger,
-        advocateModel: models.claude,
-        skepticModel: models.openai,
-        moderatorModel: models.claude,
-        idempotencyPrefix: `${options.date}:${domain.id}`,
-        onRound: persist,
-      });
-      await persist();
+    if (!domainState.debate?.result.approved || !domainState.idea) {
+      throw new Error(`${domain.name}: no proposal passed debate after 3 candidates.`);
     }
 
     const references = domainState.idea.ledger.map((entry) => entry.reference);

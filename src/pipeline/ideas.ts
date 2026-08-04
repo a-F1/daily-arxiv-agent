@@ -85,6 +85,7 @@ export async function developIdea(options: {
   model: ModelSelection;
   summaries: readonly PaperSummary[];
   domainName: string;
+  rejectionFeedback?: unknown;
   searchPriorArt: PriorArtSearch;
   idempotencyPrefix: string;
   maxRestarts?: number;
@@ -99,7 +100,11 @@ export async function developIdea(options: {
 
   for (let restart = 0; restart <= maxRestarts; restart += 1) {
     let idea = await options.client.promptJson({
-      prompt: initialIdeaPrompt(options.summaries, options.domainName),
+      prompt: initialIdeaPrompt(
+        options.summaries,
+        options.domainName,
+        options.rejectionFeedback,
+      ),
       schema: ResearchIdeaSchema,
       model: options.model,
       idempotencyKey: `${options.idempotencyPrefix}:idea:${restart}:initial`,

@@ -13,13 +13,20 @@ export function summaryPrompt(paper: unknown): string {
   ].join("\n\n");
 }
 
-export function initialIdeaPrompt(summaries: readonly unknown[], domain?: string): string {
+export function initialIdeaPrompt(
+  summaries: readonly unknown[],
+  domain?: string,
+  rejectionFeedback?: unknown,
+): string {
   return [
     `Propose one concrete, falsifiable research idea for ${domain ?? "this research area"} grounded in these summaries.`,
     'Return: {"title":string,"hypothesis":string,"motivation":string,"method":string[],"evaluation":string[],"expectedContribution":string,"impactAssessment":string,"noveltyAssessment":string,"resourceAssessment":string,"trainingResources":string,"scores":{"impact":1-5,"novelty":1-5,"feasibility":1-5},"feasible":boolean,"risks":string[]}.',
     "Feasible means the core experiment fits at most 8 H100 GPUs for 7 days. Be conservative.",
     JSON_ONLY,
     `Summaries:\n${JSON.stringify(summaries)}`,
+    ...(rejectionFeedback === undefined
+      ? []
+      : [`A previous proposal failed debate. Avoid its weaknesses:\n${JSON.stringify(rejectionFeedback)}`]),
   ].join("\n\n");
 }
 

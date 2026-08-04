@@ -19,7 +19,7 @@ export interface DebateOutcome {
 }
 
 function requestsExtension(result: Debate): boolean {
-  return !result.approved || result.unresolvedQuestions.length > 0;
+  return result.approved && result.unresolvedQuestions.length > 0;
 }
 
 export async function debateIdea(options: {
@@ -105,11 +105,6 @@ export async function debateIdea(options: {
 
           if (!finalDecision) {
             throw new Error("Debate completed without a moderator decision.");
-          }
-          if (!finalDecision.approved) {
-            throw new Error(
-              "The proposal did not pass Claude/OpenAI debate after five rounds.",
-            );
           }
           return { turns, result: finalDecision, rounds: completedRounds };
         },
