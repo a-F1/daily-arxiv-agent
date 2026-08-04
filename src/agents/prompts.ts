@@ -3,6 +3,29 @@ const JSON_ONLY = [
   "Do not use Markdown fences, commentary, or fields outside the requested schema.",
 ].join(" ");
 
+export const PROMPT_VERSION = "research-prompts-v3";
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+export function compactReferences(values: readonly unknown[], limit = 12): unknown[] {
+  return values.slice(0, limit).map((value) => {
+    const entry = asRecord(value);
+    const reference = asRecord(entry["reference"] ?? value);
+    return {
+      id: reference["id"],
+      title: reference["title"],
+      year: reference["year"],
+      doi: reference["doi"],
+      citationCount: reference["citationCount"],
+      usedIn: reference["usedIn"],
+    };
+  });
+}
+
 export function summaryPrompt(paper: unknown): string {
   return [
     "You are a precise Chinese research-paper analyst. Use the supplied full text when present.",
@@ -42,7 +65,7 @@ export function refineIdeaPrompt(input: {
     `This is refinement ${input.attempt} of 3.`,
     JSON_ONLY,
     `Current draft:\n${JSON.stringify(input.draft)}`,
-    `Prior-art ledger:\n${JSON.stringify(input.references)}`,
+    `Prior-art ledger (top compact entries):\n${JSON.stringify(compactReferences(input.references))}`,
   ].join("\n\n");
 }
 
@@ -57,7 +80,22 @@ export function finalizeIdeaPrompt(input: {
     JSON_ONLY,
     `Draft:\n${JSON.stringify(input.draft)}`,
     `Refinement:\n${JSON.stringify(input.refinement)}`,
-    `Prior-art ledger:\n${JSON.stringify(input.references)}`,
+    `Prior-art ledger (top compact entries):\n${JSON.stringify(compactReferences(input.references))}`,
+  ].join("\n\n");
+}
+
+export function reviseRejectedIdeaPrompt(input: {
+  draft: unknown;
+  debate: unknown;
+  references: readonly unknown[];
+}): string {
+  return [
+    "Apply only the moderator's concrete debate feedback to the existing proposal. Preserve sound parts; do not generate an unrelated candidate.",
+    "Return the complete revised ResearchIdea object in exactly the same shape used by the draft.",
+    JSON_ONLY,
+    `Draft:\n${JSON.stringify(input.draft)}`,
+    `Debate feedback:\n${JSON.stringify(input.debate)}`,
+    `Prior-art ledger (top compact entries):\n${JSON.stringify(compactReferences(input.references))}`,
   ].join("\n\n");
 }
 
@@ -77,8 +115,8 @@ export function debateTurnPrompt(input: {
     `Return {"round":${input.round},"model":${JSON.stringify(input.model)},"role":${JSON.stringify(input.role)},"claim":string,"evidence":string[]}.`,
     JSON_ONLY,
     `Idea:\n${JSON.stringify(input.idea)}`,
-    `Reference ledger:\n${JSON.stringify(input.references ?? [])}`,
-    `Prior turns:\n${JSON.stringify(input.history)}`,
+    `Reference ledger (top compact entries):\n${JSON.stringify(compactReferences(input.references ?? []))}`,
+    `Recent turns only:\n${JSON.stringify(input.history.slice(-4))}`,
   ].join("\n\n");
 }
 
@@ -91,15 +129,15 @@ export function debateDecisionPrompt(input: {
 }): string {
   return [
     "You are an impartial research-program moderator.",
-    'Return {"topic":string,"turns":the supplied complete turn array,"consensus":string,"unresolvedQuestions":string[],"approved":boolean,"finalIdea":a complete ResearchIdea object in the same shape as the input idea}.',
-    "Approve only if impact, novelty, falsifiability, and the 8-H100/7-day budget remain defensible. finalIdea must incorporate all agreed changes.",
+    'Return {"topic":string,"consensus":string,"unresolvedQuestions":string[],"decision":"approve"|"revise"|"reject"|"continue","finalIdea":a complete ResearchIdea object in the same shape as the input idea}.',
+    "Approve only if impact, novelty, falsifiability, and the 8-H100/7-day budget remain defensible. For revise, return a targeted finalIdea incorporating agreed changes instead of requesting a new proposal.",
     input.mayExtend
       ? "List only material unresolved questions that another debate round could resolve."
       : "This is the final round; give the best available consensus and any genuinely unresolved questions.",
     JSON_ONLY,
     `Rounds completed: ${input.round}`,
     `Idea:\n${JSON.stringify(input.idea)}`,
-    `Reference ledger:\n${JSON.stringify(input.references ?? [])}`,
-    `Debate turns:\n${JSON.stringify(input.turns)}`,
+    `Reference ledger (top compact entries):\n${JSON.stringify(compactReferences(input.references ?? []))}`,
+    `Recent debate turns:\n${JSON.stringify(input.turns.slice(-6))}`,
   ].join("\n\n");
 }

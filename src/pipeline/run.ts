@@ -2,7 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import pLimit from "p-limit";
 import { AgentClient, RunBudget, type UsageSnapshot } from "../agents/client.js";
+import { PROMPT_VERSION, reviseRejectedIdeaPrompt } from "../agents/prompts.js";
 import {
   resolveFlagshipModels,
   type FlagshipModelConfig,
@@ -12,11 +14,12 @@ import { DOMAINS } from "../domains.js";
 import {
   DailyReportSchema,
   type DailyReport,
-  type DebateTurn,
   type Domain,
   type DomainId,
   type DomainResearch,
   type PaperSummary,
+  type ResearchIdea,
+  ResearchIdeaSchema,
   type ScoredPaper,
 } from "../schema/report.js";
 import {
@@ -24,9 +27,14 @@ import {
   dedupeArxivPapers,
   downloadPdf,
   extractPdfText,
+  compressPaperText,
 } from "../sources/arxiv.js";
 import { OpenAlexClient } from "../sources/openalex.js";
-import { debateIdea, type DebateOutcome } from "./debate.js";
+import {
+  debateIdea,
+  type DebateCheckpoint,
+  type DebateOutcome,
+} from "./debate.js";
 import {
   developIdea,
   type IdeaCheckpoint,
@@ -37,16 +45,16 @@ import { selectPapers } from "./select.js";
 import { summarizePapers } from "./summarize.js";
 
 interface DomainCheckpoint {
-  summaries: PaperSummary[];
+  summaries: Record<string, PaperSummary>;
   idea?: IdeaResult;
   ideaProgress?: IdeaCheckpoint;
   debate?: DebateOutcome;
-  debateTurns?: DebateTurn[];
+  debateProgress?: DebateCheckpoint;
   debateAttempts?: number;
 }
 
 interface DailyCheckpoint {
-  version: 1;
+  version: number;
   date: string;
   inputHash: string;
   status: "running" | "complete";
@@ -55,6 +63,8 @@ interface DailyCheckpoint {
   report?: DailyReport;
   updatedAt: string;
 }
+
+const PIPELINE_VERSION = "daily-research-v2";
 
 export interface CheckpointStore {
   load(date: string): Promise<DailyCheckpoint | undefined>;
@@ -121,12 +131,35 @@ function stable(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function inputHash(options: DailyRunOptions): string {
+function textHashes(
+  paperTexts: Readonly<Record<string, string>> | undefined,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(paperTexts ?? {})
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([id, text]) => [
+        id,
+        createHash("sha256").update(text).digest("hex"),
+      ]),
+  );
+}
+
+function inputHash(
+  options: DailyRunOptions,
+  models: ResolvedModels,
+  runtimeConfig: Record<string, number>,
+): string {
   return createHash("sha256")
     .update(stable({
+      pipelineVersion: PIPELINE_VERSION,
+      promptVersion: PROMPT_VERSION,
+      reportSchemaVersion: "1.0",
       date: options.date,
       domains: options.domains,
       papers: options.papers,
+      paperTexts: textHashes(options.paperTexts),
+      models,
+      runtimeConfig,
     }))
     .digest("hex");
 }
@@ -139,13 +172,41 @@ function positiveIntegerEnv(name: string, fallback: number): number {
 async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
   if (!options.apiKey.trim()) throw new Error("CURSOR_API_KEY is required.");
   const now = options.now ?? (() => new Date());
-  const hash = inputHash(options);
+  const models =
+    options.resolvedModels ??
+    (await resolveFlagshipModels({
+      apiKey: options.apiKey,
+      configured: options.configuredModels,
+    }));
+  const runtimeConfig = {
+    modelConcurrency: positiveIntegerEnv("MODEL_CONCURRENCY", 3),
+    domainConcurrency: positiveIntegerEnv("DOMAIN_CONCURRENCY", 3),
+    summaryConcurrency: positiveIntegerEnv("SUMMARY_CONCURRENCY", 3),
+    modelTimeoutMs: positiveIntegerEnv("MODEL_TIMEOUT_MS", 600_000),
+    maxPaperTextChars: positiveIntegerEnv("MAX_PAPER_TEXT_CHARS", 40_000),
+    debateMinRounds: Math.max(3, positiveIntegerEnv("DEBATE_MIN_ROUNDS", 3)),
+    debateMaxRounds: Math.min(5, positiveIntegerEnv("DEBATE_MAX_ROUNDS", 5)),
+  };
+  if (runtimeConfig.debateMinRounds > runtimeConfig.debateMaxRounds) {
+    throw new Error(
+      "DEBATE_MIN_ROUNDS must not exceed DEBATE_MAX_ROUNDS after enforcing the 3-5 round bounds.",
+    );
+  }
+  const hash = inputHash(options, models, runtimeConfig);
   const store =
     options.checkpointStore ??
     new FileCheckpointStore(join(options.cwd ?? process.cwd(), "data", "checkpoints"));
-  const existing = await store.load(options.date);
-  if (existing && existing.inputHash !== hash) {
-    throw new Error(`Checkpoint inputs changed for ${options.date}; remove its checkpoint to restart.`);
+  const loaded = await store.load(options.date);
+  const existing =
+    loaded?.version === 2 && loaded.inputHash === hash ? loaded : undefined;
+  if (loaded && !existing) {
+    console.warn(
+      JSON.stringify({
+        event: "checkpoint_ignored",
+        date: options.date,
+        reason: loaded.version !== 2 ? "version_changed" : "inputs_changed",
+      }),
+    );
   }
   if (existing?.status === "complete" && existing.report) {
     return DailyReportSchema.parse(existing.report);
@@ -158,19 +219,8 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     },
     existing?.budget,
   );
-  const models =
-    options.resolvedModels ??
-    (await resolveFlagshipModels({
-      apiKey: options.apiKey,
-      configured: options.configuredModels,
-    }));
-  const client = new AgentClient({
-    apiKey: options.apiKey,
-    cwd: options.cwd ?? process.cwd(),
-    budget,
-  });
   const state: DailyCheckpoint = existing ?? {
-    version: 1,
+    version: 2,
     date: options.date,
     inputHash: hash,
     status: "running",
@@ -178,132 +228,205 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     budget: budget.snapshot(),
     updatedAt: now().toISOString(),
   };
+  let persistQueue = Promise.resolve();
   const persist = async (): Promise<void> => {
     state.budget = budget.snapshot();
     state.updatedAt = now().toISOString();
-    await store.save(options.date, state);
+    const snapshot = structuredClone(state);
+    persistQueue = persistQueue.then(() => store.save(options.date, snapshot));
+    await persistQueue;
   };
+  const client = new AgentClient({
+    apiKey: options.apiKey,
+    cwd: options.cwd ?? process.cwd(),
+    budget,
+    maxConcurrency: runtimeConfig.modelConcurrency,
+    timeoutMs: runtimeConfig.modelTimeoutMs,
+    onUsage: async () => persist(),
+  });
 
-  const domainResearch: DomainResearch[] = [];
-  const reportPapers: DailyReport["papers"] = [];
-  const warnings: string[] = [];
-
-  for (const domain of options.domains) {
-    const selected = options.papers.filter((item) => item.score.domainId === domain.id);
-    if (selected.length === 0) {
-      warnings.push(`${domain.name}: no qualifying papers`);
-      continue;
-    }
-    if (selected.length < domain.maxPapers) {
-      warnings.push(`${domain.name}: selected ${selected.length}/${domain.maxPapers} papers`);
-    }
-
-    const domainState = state.domains[domain.id] ?? { summaries: [] };
-    state.domains[domain.id] = domainState;
-    if (domainState.summaries.length < selected.length) {
-      const remaining = selected.slice(domainState.summaries.length).map(({ paper }) => ({
-        ...paper,
-        fullText: options.paperTexts?.[paper.baseArxivId],
-      }));
-      await summarizePapers({
-        client,
-        model: models.claude,
-        papers: remaining,
-        idempotencyPrefix: `${options.date}:${domain.id}`,
-        onSummary: async (summary) => {
-          domainState.summaries.push(summary);
-          await persist();
-        },
-      });
-    }
-
-    let rejectionFeedback =
-      domainState.debate?.result.approved === false
-        ? domainState.debate.result
-        : undefined;
-    while ((domainState.debateAttempts ?? 0) < 3) {
-      const attempt = domainState.debateAttempts ?? 0;
-      if (!domainState.idea || rejectionFeedback) {
-        domainState.idea = await developIdea({
-          client,
-          model: models.openai,
-          summaries: domainState.summaries,
-          domainName: domain.name,
-          rejectionFeedback,
-          searchPriorArt: options.searchPriorArt,
-          idempotencyPrefix: `${options.date}:${domain.id}:idea:${attempt}`,
-          maxRestarts: 4,
-          maxReferences: 30,
-          onCheckpoint: async (progress) => {
-            domainState.ideaProgress = progress;
-            await persist();
-          },
-        });
-        delete domainState.ideaProgress;
-        delete domainState.debate;
-        rejectionFeedback = undefined;
-        await persist();
-      }
-
-      if (!domainState.debate) {
-        domainState.debate = await debateIdea({
-          client,
-          idea: domainState.idea.idea,
-          references: domainState.idea.ledger,
-          initialTurns: domainState.debateTurns,
-          advocateModel: models.claude,
-          skepticModel: models.openai,
-          moderatorModel: models.claude,
-          idempotencyPrefix: `${options.date}:${domain.id}:debate:${attempt}`,
-          onRound: async (_round, turns) => {
-            domainState.debateTurns = [...turns];
-            await persist();
-          },
-        });
-        delete domainState.debateTurns;
-        await persist();
-      }
-      if (domainState.debate.result.approved) break;
-      rejectionFeedback = domainState.debate.result;
-      domainState.debateAttempts = attempt + 1;
-      await persist();
-    }
-    if (!domainState.debate?.result.approved || !domainState.idea) {
-      throw new Error(`${domain.name}: no proposal passed debate after 3 candidates.`);
-    }
-
-    const references = domainState.idea.ledger.map((entry) => entry.reference);
-    domainResearch.push({
-      domainId: domain.id,
-      idea: domainState.debate.result.finalIdea,
-      refinements: domainState.idea.refinementHistory,
-      debate: domainState.debate.result,
-      references,
-      restarts: domainState.idea.restarts,
-      debateRounds: domainState.debate.rounds,
-    });
-
-    selected.forEach((item, index) => {
-      reportPapers.push({
-        paper: item.paper,
-        score: item.score,
-        summary: domainState.summaries[index]!,
-        ideas: [],
-        refinements: [],
-        references: [],
-        provenance: [
-          {
-            stage: "summarization",
-            source: "Cursor SDK",
-            retrievedAt: now().toISOString(),
-            model: models.claude.id,
-            promptVersion: "paper-summary-v2",
-            notes: [],
-          },
-        ],
-      });
-    });
+  interface DomainOutput {
+    research?: DomainResearch;
+    papers: DailyReport["papers"];
+    warnings: string[];
   }
+  const domainLimit = pLimit(runtimeConfig.domainConcurrency);
+  const outputs = await Promise.all(
+    options.domains.map((domain) =>
+      domainLimit(async (): Promise<DomainOutput> => {
+        const selected = options.papers.filter(
+          (item) => item.score.domainId === domain.id,
+        );
+        if (selected.length === 0) {
+          return {
+            papers: [],
+            warnings: [`${domain.name}: no qualifying papers`],
+          };
+        }
+        const domainWarnings =
+          selected.length < domain.maxPapers
+            ? [`${domain.name}: selected ${selected.length}/${domain.maxPapers} papers`]
+            : [];
+        const domainState = state.domains[domain.id] ?? { summaries: {} };
+        state.domains[domain.id] = domainState;
+
+        const remaining = selected
+          .filter(({ paper }) => !domainState.summaries[paper.baseArxivId])
+          .map(({ paper }) => {
+            const fullText = options.paperTexts?.[paper.baseArxivId];
+            return {
+              ...paper,
+              ...(fullText
+                ? {
+                    fullText: compressPaperText(
+                      fullText,
+                      runtimeConfig.maxPaperTextChars,
+                    ),
+                  }
+                : {}),
+            };
+          });
+        if (remaining.length > 0) {
+          await summarizePapers({
+            client,
+            model: models.summary,
+            papers: remaining,
+            domainId: domain.id,
+            concurrency: runtimeConfig.summaryConcurrency,
+            idempotencyPrefix: `${options.date}:${domain.id}`,
+            onSummary: async (summary, paper) => {
+              const paperId = String(paper.baseArxivId ?? paper.arxivId);
+              domainState.summaries[paperId] = summary;
+              await persist();
+            },
+          });
+        }
+        const orderedSummaries = selected.map(({ paper }) => {
+          const summary = domainState.summaries[paper.baseArxivId];
+          if (!summary) throw new Error(`Missing summary for ${paper.baseArxivId}.`);
+          return summary;
+        });
+
+        if (!domainState.idea) {
+          domainState.idea = await developIdea({
+            client,
+            model: models.idea,
+            summaries: orderedSummaries,
+            domainName: domain.name,
+            searchPriorArt: options.searchPriorArt,
+            idempotencyPrefix: `${options.date}:${domain.id}:idea`,
+            maxRestarts: 1,
+            maxReferences: 30,
+            initialCheckpoint: domainState.ideaProgress,
+            domainId: domain.id,
+            candidate: 0,
+            onCheckpoint: async (progress) => {
+              domainState.ideaProgress = progress;
+              await persist();
+            },
+          });
+          delete domainState.ideaProgress;
+          await persist();
+        }
+
+        while ((domainState.debateAttempts ?? 0) < 2) {
+          const attempt = domainState.debateAttempts ?? 0;
+          if (!domainState.debate) {
+            domainState.debate = await debateIdea({
+              client,
+              idea: domainState.idea.idea,
+              references: domainState.idea.ledger,
+              initialCheckpoint: domainState.debateProgress,
+              advocateModel: models.claude,
+              skepticModel: models.openai,
+              moderatorModel: models.claude,
+              idempotencyPrefix: `${options.date}:${domain.id}:debate:${attempt}`,
+              domainId: domain.id,
+              candidate: attempt,
+              minRounds: runtimeConfig.debateMinRounds,
+              maxRounds: runtimeConfig.debateMaxRounds,
+              onCheckpoint: async (progress) => {
+                domainState.debateProgress = structuredClone(progress);
+                await persist();
+              },
+            });
+            delete domainState.debateProgress;
+            await persist();
+          }
+          if (domainState.debate.result.approved) break;
+          if (attempt >= 1) break;
+
+          const revisedIdea: ResearchIdea = await client.promptJson({
+            prompt: reviseRejectedIdeaPrompt({
+              draft: domainState.idea.idea,
+              debate: {
+                consensus: domainState.debate.result.consensus,
+                unresolvedQuestions:
+                  domainState.debate.result.unresolvedQuestions,
+              },
+              references: domainState.idea.ledger,
+            }),
+            schema: ResearchIdeaSchema,
+            model: models.idea,
+            idempotencyKey: `${options.date}:${domain.id}:targeted-revision`,
+            context: {
+              stage: "refinement",
+              domainId: domain.id,
+              candidate: attempt + 1,
+              role: "debate-feedback",
+            },
+          });
+          domainState.idea = { ...domainState.idea, idea: revisedIdea };
+          domainState.debateAttempts = attempt + 1;
+          delete domainState.debate;
+          delete domainState.debateProgress;
+          await persist();
+        }
+        if (!domainState.debate?.result.approved) {
+          throw new Error(
+            `${domain.name}: proposal did not pass debate after one targeted revision.`,
+          );
+        }
+
+        const references = domainState.idea.ledger.map(
+          (entry) => entry.reference,
+        );
+        const research: DomainResearch = {
+          domainId: domain.id,
+          idea: domainState.debate.result.finalIdea,
+          refinements: domainState.idea.refinementHistory,
+          debate: domainState.debate.result,
+          references,
+          restarts: domainState.idea.restarts,
+          debateRounds: domainState.debate.rounds,
+        };
+        const papers: DailyReport["papers"] = selected.map((item) => ({
+          paper: item.paper,
+          score: item.score,
+          summary: domainState.summaries[item.paper.baseArxivId]!,
+          ideas: [],
+          refinements: [],
+          references: [],
+          provenance: [
+            {
+              stage: "summarization",
+              source: "Cursor SDK",
+              retrievedAt: now().toISOString(),
+              model: models.summary.id,
+              promptVersion: PROMPT_VERSION,
+              notes: [],
+            },
+          ],
+        }));
+        return { research, papers, warnings: domainWarnings };
+      }),
+    ),
+  );
+  const domainResearch = outputs.flatMap((output) =>
+    output.research ? [output.research] : [],
+  );
+  const reportPapers = outputs.flatMap((output) => output.papers);
+  const warnings = outputs.flatMap((output) => output.warnings);
 
   const report = DailyReportSchema.parse({
     schemaVersion: "1.0",
@@ -319,8 +442,9 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         retrievedAt: now().toISOString(),
         inputHash: hash,
         notes: [
-          `Models: Claude=${models.claude.id}; OpenAI=${models.openai.id}`,
+          `Models: summary=${models.summary.id}; idea=${models.idea.id}; debate Claude=${models.claude.id}; debate OpenAI=${models.openai.id}`,
           `Usage: ${budget.snapshot().runs} runs, ${budget.snapshot().totalTokens} tokens`,
+          `Pipeline: ${PIPELINE_VERSION}; prompts: ${PROMPT_VERSION}`,
         ],
       },
     ],
@@ -417,9 +541,13 @@ export async function runCli(): Promise<void> {
       const bytes = await downloadPdf(item.paper.pdfUrl, {
         userAgent: process.env.ARXIV_USER_AGENT,
       });
-      paperTexts[item.paper.baseArxivId] = await extractPdfText(bytes, {
+      const extracted = await extractPdfText(bytes, {
         maxPages: Number(process.env.MAX_PDF_PAGES ?? 40),
       });
+      paperTexts[item.paper.baseArxivId] = compressPaperText(
+        extracted,
+        positiveIntegerEnv("MAX_PAPER_TEXT_CHARS", 40_000),
+      );
     } catch (error) {
       console.warn(`PDF extraction failed for ${item.paper.baseArxivId}:`, error);
     }

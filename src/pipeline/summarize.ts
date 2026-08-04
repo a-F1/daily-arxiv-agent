@@ -1,5 +1,6 @@
 import type { ModelSelection } from "@cursor/sdk";
 import type { z } from "zod";
+import pLimit from "p-limit";
 import { AgentClient } from "../agents/client.js";
 import { summaryPrompt } from "../agents/prompts.js";
 import { PaperSummarySchema } from "../schema/report.js";
@@ -23,23 +24,29 @@ export async function summarizePapers(options: {
   model: ModelSelection;
   papers: readonly PaperInput[];
   idempotencyPrefix: string;
+  domainId?: string;
+  concurrency?: number;
   onSummary?: (
     summary: PaperSummary,
     paper: PaperInput,
     index: number,
   ) => void | Promise<void>;
 }): Promise<PaperSummary[]> {
-  const summaries: PaperSummary[] = [];
-  for (const [index, paper] of options.papers.entries()) {
+  const limit = pLimit(options.concurrency ?? 3);
+  return Promise.all(options.papers.map((paper, index) => limit(async () => {
     const paperId = paper.id ?? paper.arxivId ?? String(index);
     const summary = await options.client.promptJson({
       prompt: summaryPrompt(paper),
       schema: PaperSummarySchema,
       model: options.model,
       idempotencyKey: `${options.idempotencyPrefix}:summary:${paperId}`,
+      context: {
+        stage: "summary",
+        domainId: options.domainId,
+        paperId: String(paperId),
+      },
     });
-    summaries.push(summary);
     await options.onSummary?.(summary, paper, index);
-  }
-  return summaries;
+    return summary;
+  })));
 }

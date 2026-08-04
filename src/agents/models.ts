@@ -5,17 +5,25 @@ export type ModelProvider = "claude" | "openai";
 export interface FlagshipModelConfig {
   claude: string;
   openai: string;
+  summary?: string;
+  idea?: string;
 }
 
 export interface ResolvedModels {
   claude: ModelSelection;
   openai: ModelSelection;
+  summary: ModelSelection;
+  idea: ModelSelection;
 }
 
 export const DEFAULT_MODEL_ENV = {
   claude: "CURSOR_CLAUDE_MODEL",
   openai: "CURSOR_OPENAI_MODEL",
+  summary: "CURSOR_SUMMARY_MODEL",
+  idea: "CURSOR_IDEA_MODEL",
 } as const;
+
+export const DEFAULT_FAST_MODEL = "composer-2.5";
 
 const PROVIDER_MARKERS: Record<ModelProvider, RegExp> = {
   claude: /(claude|anthropic)/i,
@@ -78,7 +86,29 @@ export function readModelConfig(
       `Set ${DEFAULT_MODEL_ENV.claude} and ${DEFAULT_MODEL_ENV.openai} to explicit account model IDs.`,
     );
   }
-  return { claude, openai };
+  return {
+    claude,
+    openai,
+    summary: env[DEFAULT_MODEL_ENV.summary] || DEFAULT_FAST_MODEL,
+    idea:
+      env[DEFAULT_MODEL_ENV.idea] ??
+      env[DEFAULT_MODEL_ENV.summary] ??
+      DEFAULT_FAST_MODEL,
+  };
+}
+
+function resolveAvailableModel(
+  configuredId: string,
+  available: readonly ModelListItem[],
+  purpose: string,
+): ModelSelection {
+  const model = findExactModel(configuredId, available);
+  if (!model) {
+    throw new Error(
+      `Configured ${purpose} model "${configuredId}" is not available to this Cursor account.`,
+    );
+  }
+  return { id: model.id };
 }
 
 export async function resolveFlagshipModels(options: {
@@ -93,5 +123,15 @@ export async function resolveFlagshipModels(options: {
   return {
     claude: resolveConfiguredModel("claude", configured.claude, available),
     openai: resolveConfiguredModel("openai", configured.openai, available),
+    summary: resolveAvailableModel(
+      configured.summary ?? DEFAULT_FAST_MODEL,
+      available,
+      "summary",
+    ),
+    idea: resolveAvailableModel(
+      configured.idea ?? configured.summary ?? DEFAULT_FAST_MODEL,
+      available,
+      "idea",
+    ),
   };
 }

@@ -453,3 +453,50 @@ export async function extractPdfText(
     await loadingTask.destroy();
   }
 }
+
+const IMPORTANT_SECTION =
+  /\b(abstract|introduction|background|method|methodology|approach|architecture|implementation|experiment|evaluation|result|analysis|limitation|discussion|conclusion)\b/i;
+
+/**
+ * Deterministically retain the beginning, experimentally relevant sections,
+ * and ending of a paper without sending the full PDF to a model.
+ */
+export function compressPaperText(
+  text: string,
+  maxChars = 40_000,
+): string {
+  if (maxChars < 4_000) throw new Error("maxChars must be at least 4000.");
+  const normalized = text.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  if (normalized.length <= maxChars) return normalized;
+
+  const blocks = normalized
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const selected: string[] = [];
+  const seen = new Set<string>();
+  const add = (block: string): void => {
+    const key = block.slice(0, 200);
+    if (!seen.has(key)) {
+      seen.add(key);
+      selected.push(block);
+    }
+  };
+
+  for (const block of blocks.slice(0, 2)) add(block);
+  for (const block of blocks) {
+    if (selected.length >= 10) break;
+    if (IMPORTANT_SECTION.test(block.slice(0, 500))) add(block);
+  }
+  for (const block of blocks.slice(-2)) add(block);
+
+  const separatorChars = Math.max(0, selected.length - 1) * 2;
+  const perBlock = Math.max(
+    500,
+    Math.floor((maxChars - separatorChars) / Math.max(1, selected.length)),
+  );
+  return selected
+    .map((block) => block.slice(0, perBlock))
+    .join("\n\n")
+    .slice(0, maxChars);
+}

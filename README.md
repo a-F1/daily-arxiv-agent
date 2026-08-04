@@ -40,7 +40,8 @@ motivation / method / experiment setup / results / training resources，以及�
 在仓库设置中添加：
 
 - Actions secret：`CURSOR_API_KEY`
-- Actions variables：`CURSOR_CLAUDE_MODEL`、`CURSOR_OPENAI_MODEL`（必须是当前 Cursor 账户可用的明确模型 ID）
+- Actions variables：`CURSOR_CLAUDE_MODEL`、`CURSOR_OPENAI_MODEL`（仅用于 debate，必须是当前 Cursor 账户可用的明确模型 ID）
+- 可选模型变量：`CURSOR_SUMMARY_MODEL`、`CURSOR_IDEA_MODEL`（默认 `composer-2.5`，须在账户模型列表中可用）
 - 可选 Actions variable：`OPENALEX_EMAIL`（OpenAlex polite pool）
 
 `Build and deploy Pages` 在 `main` 更新或手动触发时执行测试、Astro 构建、Pagefind 索引并部署。首次使用前，在仓库 **Settings → Pages → Build and deployment** 中选择 **GitHub Actions**。
@@ -50,3 +51,9 @@ motivation / method / experiment setup / results / training resources，以及�
 ## 环境变量
 
 复制 `.env.example` 为 `.env` 进行本地配置。`.env` 与流水线检查点默认不会进入版本控制。
+
+流水线默认并行处理三个领域，并以 `MODEL_CONCURRENCY=3` 作为所有模型调用的
+全局上限。`SUMMARY_CONCURRENCY` 只限制摘要任务，仍受全局上限约束。
+`MODEL_TIMEOUT_MS=600000` 为单次调用设置十分钟上限；
+`MAX_PAPER_TEXT_CHARS=40000` 控制送入摘要模型的 PDF 关键章节长度。
+`DEBATE_MIN_ROUNDS` / `DEBATE_MAX_ROUNDS` 必须保持在 3–5 轮范围内。

@@ -1,11 +1,29 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import {
+  compressPaperText,
   dedupeArxivPapers,
   downloadPdf,
   parseArxivApi,
   parseArxivRss,
 } from "../src/sources/arxiv.js";
+
+describe("paper text compression", () => {
+  it("keeps important sections under a deterministic character cap", () => {
+    const text = [
+      `Abstract\n${"overview ".repeat(800)}`,
+      `Related Work\n${"citation ".repeat(800)}`,
+      `Method\n${"architecture ".repeat(800)}`,
+      `Experiments\n${"result ".repeat(800)}`,
+      `Limitations\n${"constraint ".repeat(800)}`,
+    ].join("\n\n");
+    const compressed = compressPaperText(text, 5_000);
+    expect(compressed.length).toBeLessThanOrEqual(5_000);
+    expect(compressed).toContain("Abstract");
+    expect(compressed).toContain("Method");
+    expect(compressPaperText(text, 5_000)).toBe(compressed);
+  });
+});
 
 const fixture = (name: string) =>
   readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
