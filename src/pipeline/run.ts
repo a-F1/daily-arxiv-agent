@@ -185,7 +185,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     modelTimeoutMs: positiveIntegerEnv("MODEL_TIMEOUT_MS", 600_000),
     maxPaperTextChars: positiveIntegerEnv("MAX_PAPER_TEXT_CHARS", 40_000),
     debateMinRounds: Math.max(3, positiveIntegerEnv("DEBATE_MIN_ROUNDS", 3)),
-    debateMaxRounds: Math.min(5, positiveIntegerEnv("DEBATE_MAX_ROUNDS", 5)),
+    debateMaxRounds: Math.min(5, positiveIntegerEnv("DEBATE_MAX_ROUNDS", 3)),
   };
   if (runtimeConfig.debateMinRounds > runtimeConfig.debateMaxRounds) {
     throw new Error(

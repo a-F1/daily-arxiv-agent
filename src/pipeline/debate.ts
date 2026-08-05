@@ -63,7 +63,7 @@ export async function debateIdea(options: {
 }): Promise<DebateOutcome> {
   const moderatorModel = options.moderatorModel ?? options.advocateModel;
   const minRounds = options.minRounds ?? 3;
-  const maxRounds = options.maxRounds ?? 5;
+  const maxRounds = options.maxRounds ?? 3;
   if (minRounds < 3 || maxRounds > 5 || minRounds > maxRounds) {
     throw new Error("Debate rounds must satisfy 3 <= minRounds <= maxRounds <= 5.");
   }
@@ -72,154 +72,145 @@ export async function debateIdea(options: {
   ];
   let workingIdea = options.initialCheckpoint?.workingIdea ?? options.idea;
 
-  return options.client.withSession({
-    model: options.advocateModel,
-    name: `daily-arxiv advocate ${options.idempotencyPrefix}`,
-    task: (advocate) =>
-      options.client.withSession({
-        model: options.skepticModel,
-        name: `daily-arxiv skeptic ${options.idempotencyPrefix}`,
-        task: async (skeptic) => {
-          let finalDecision = options.initialCheckpoint?.decision;
-          let completedRounds = 0;
-          const checkpointRound = turns.reduce(
-            (maximum, turn) => Math.max(maximum, turn.round),
-            0,
-          );
-          if (
-            finalDecision &&
-            (finalDecision.decision === "approve" ||
-              finalDecision.decision === "reject")
-          ) {
-            const result = DebateSchema.parse({
-              topic: finalDecision.topic,
-              turns,
-              consensus: finalDecision.consensus,
-              unresolvedQuestions: finalDecision.unresolvedQuestions,
-              approved: finalDecision.decision === "approve",
-              finalIdea: finalDecision.finalIdea,
-            });
-            return { turns, result, rounds: checkpointRound };
-          }
-          const firstRound = finalDecision ? checkpointRound + 1 : 1;
+  let finalDecision = options.initialCheckpoint?.decision;
+  let completedRounds = 0;
+  const checkpointRound = turns.reduce(
+    (maximum, turn) => Math.max(maximum, turn.round),
+    0,
+  );
+  if (
+    finalDecision &&
+    (finalDecision.decision === "approve" ||
+      finalDecision.decision === "reject")
+  ) {
+    const result = DebateSchema.parse({
+      topic: finalDecision.topic,
+      turns,
+      consensus: finalDecision.consensus,
+      unresolvedQuestions: finalDecision.unresolvedQuestions,
+      approved: finalDecision.decision === "approve",
+      finalIdea: finalDecision.finalIdea,
+    });
+    return { turns, result, rounds: checkpointRound };
+  }
+  const firstRound = finalDecision ? checkpointRound + 1 : 1;
 
-          for (let round = firstRound; round <= maxRounds; round += 1) {
-            let advocateTurn = turns.find(
-              (turn) => turn.round === round && turn.role === "advocate",
-            );
-            if (!advocateTurn) {
-              advocateTurn = await advocate.send(
-                debateTurnPrompt({
-                  role: "advocate",
-                  model: options.advocateModel.id,
-                  idea: workingIdea,
-                  references: options.references,
-                  round,
-                  history: turns,
-                }),
-                DebateTurnSchema,
-                `${options.idempotencyPrefix}:debate:${round}:advocate`,
-                {
-                  stage: "debate",
-                  domainId: options.domainId,
-                  candidate: options.candidate,
-                  round,
-                  role: "advocate",
-                },
-              );
-              turns.push(advocateTurn);
-              await options.onCheckpoint?.({ turns, workingIdea });
-            }
-
-            let skepticTurn = turns.find(
-              (turn) => turn.round === round && turn.role === "skeptic",
-            );
-            if (!skepticTurn) {
-              skepticTurn = await skeptic.send(
-                debateTurnPrompt({
-                  role: "skeptic",
-                  model: options.skepticModel.id,
-                  idea: workingIdea,
-                  references: options.references,
-                  round,
-                  history: turns,
-                }),
-                DebateTurnSchema,
-                `${options.idempotencyPrefix}:debate:${round}:skeptic`,
-                {
-                  stage: "debate",
-                  domainId: options.domainId,
-                  candidate: options.candidate,
-                  round,
-                  role: "skeptic",
-                },
-              );
-              turns.push(skepticTurn);
-              await options.onCheckpoint?.({ turns, workingIdea });
-            }
-            completedRounds = round;
-
-            if (round < minRounds) {
-              await options.onRound?.(round, turns);
-              continue;
-            }
-
-            finalDecision = await options.client.promptJson({
-              prompt: debateDecisionPrompt({
-                idea: workingIdea,
-                references: options.references,
-                turns,
-                round,
-                mayExtend: round < maxRounds,
-              }),
-              schema: ModeratorDecisionSchema,
-              model: moderatorModel,
-              idempotencyKey: `${options.idempotencyPrefix}:debate:${round}:decision`,
-              context: {
-                stage: "debate",
-                domainId: options.domainId,
-                candidate: options.candidate,
-                round,
-                role: "moderator",
-              },
-            });
-            workingIdea = finalDecision.finalIdea;
-            const assembled = DebateSchema.parse({
-              topic: finalDecision.topic,
-              turns,
-              consensus: finalDecision.consensus,
-              unresolvedQuestions: finalDecision.unresolvedQuestions,
-              approved: finalDecision.decision === "approve",
-              finalIdea: finalDecision.finalIdea,
-            });
-            await options.onCheckpoint?.({
-              turns,
-              workingIdea,
-              decision: finalDecision,
-            });
-            await options.onRound?.(round, turns, assembled);
-
-            if (
-              finalDecision.decision === "approve" ||
-              finalDecision.decision === "reject" ||
-              round === maxRounds
-            ) {
-              return { turns, result: assembled, rounds: completedRounds };
-            }
-          }
-          if (!finalDecision) {
-            throw new Error("Debate completed without a moderator decision.");
-          }
-          const result = DebateSchema.parse({
-            topic: finalDecision.topic,
-            turns,
-            consensus: finalDecision.consensus,
-            unresolvedQuestions: finalDecision.unresolvedQuestions,
-            approved: finalDecision.decision === "approve",
-            finalIdea: finalDecision.finalIdea,
-          });
-          return { turns, result, rounds: completedRounds };
+  for (let round = firstRound; round <= maxRounds; round += 1) {
+    let advocateTurn = turns.find(
+      (turn) => turn.round === round && turn.role === "advocate",
+    );
+    if (!advocateTurn) {
+      advocateTurn = await options.client.promptJson({
+        prompt: debateTurnPrompt({
+          role: "advocate",
+          model: options.advocateModel.id,
+          idea: workingIdea,
+          references: options.references,
+          round,
+          history: turns,
+        }),
+        schema: DebateTurnSchema,
+        model: options.advocateModel,
+        idempotencyKey: `${options.idempotencyPrefix}:debate:${round}:advocate`,
+        context: {
+          stage: "debate",
+          domainId: options.domainId,
+          candidate: options.candidate,
+          round,
+          role: "advocate",
         },
+      });
+      turns.push(advocateTurn);
+      await options.onCheckpoint?.({ turns, workingIdea });
+    }
+
+    let skepticTurn = turns.find(
+      (turn) => turn.round === round && turn.role === "skeptic",
+    );
+    if (!skepticTurn) {
+      skepticTurn = await options.client.promptJson({
+        prompt: debateTurnPrompt({
+          role: "skeptic",
+          model: options.skepticModel.id,
+          idea: workingIdea,
+          references: options.references,
+          round,
+          history: turns,
+        }),
+        schema: DebateTurnSchema,
+        model: options.skepticModel,
+        idempotencyKey: `${options.idempotencyPrefix}:debate:${round}:skeptic`,
+        context: {
+          stage: "debate",
+          domainId: options.domainId,
+          candidate: options.candidate,
+          round,
+          role: "skeptic",
+        },
+      });
+      turns.push(skepticTurn);
+      await options.onCheckpoint?.({ turns, workingIdea });
+    }
+    completedRounds = round;
+
+    if (round < minRounds) {
+      await options.onRound?.(round, turns);
+      continue;
+    }
+
+    finalDecision = await options.client.promptJson({
+      prompt: debateDecisionPrompt({
+        idea: workingIdea,
+        references: options.references,
+        turns,
+        round,
+        mayExtend: round < maxRounds,
       }),
+      schema: ModeratorDecisionSchema,
+      model: moderatorModel,
+      idempotencyKey: `${options.idempotencyPrefix}:debate:${round}:decision`,
+      context: {
+        stage: "debate",
+        domainId: options.domainId,
+        candidate: options.candidate,
+        round,
+        role: "moderator",
+      },
+    });
+    workingIdea = finalDecision.finalIdea;
+    const assembled = DebateSchema.parse({
+      topic: finalDecision.topic,
+      turns,
+      consensus: finalDecision.consensus,
+      unresolvedQuestions: finalDecision.unresolvedQuestions,
+      approved: finalDecision.decision === "approve",
+      finalIdea: finalDecision.finalIdea,
+    });
+    await options.onCheckpoint?.({
+      turns,
+      workingIdea,
+      decision: finalDecision,
+    });
+    await options.onRound?.(round, turns, assembled);
+
+    if (
+      finalDecision.decision === "approve" ||
+      finalDecision.decision === "reject" ||
+      round === maxRounds
+    ) {
+      return { turns, result: assembled, rounds: completedRounds };
+    }
+  }
+  if (!finalDecision) {
+    throw new Error("Debate completed without a moderator decision.");
+  }
+  const result = DebateSchema.parse({
+    topic: finalDecision.topic,
+    turns,
+    consensus: finalDecision.consensus,
+    unresolvedQuestions: finalDecision.unresolvedQuestions,
+    approved: finalDecision.decision === "approve",
+    finalIdea: finalDecision.finalIdea,
   });
+  return { turns, result, rounds: completedRounds };
 }

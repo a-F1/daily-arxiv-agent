@@ -17,6 +17,15 @@ export interface PriorArtQuery {
   maxResults?: number;
 }
 
+export function sanitizeOpenAlexSearch(value: string): string {
+  return value
+    .replace(/[|]/g, " ")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 500);
+}
+
 function record(value: unknown): UnknownRecord {
   return value !== null && typeof value === "object"
     ? (value as UnknownRecord)
@@ -144,9 +153,11 @@ export class OpenAlexClient {
 
   async searchPriorArt(query: PriorArtQuery): Promise<Reference[]> {
     if (!query.title.trim()) throw new Error("Prior-art query needs a title");
-    const searchText = [query.title, query.abstract?.slice(0, 500)]
-      .filter(Boolean)
-      .join(" ");
+    const searchText = sanitizeOpenAlexSearch(
+      [query.title, query.abstract?.slice(0, 500)]
+        .filter(Boolean)
+        .join(" "),
+    );
     const url = new URL(OPENALEX_WORKS_URL);
     url.searchParams.set("search", searchText);
     url.searchParams.set(

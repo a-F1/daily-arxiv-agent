@@ -112,6 +112,7 @@ export function debateTurnPrompt(input: {
     input.role === "advocate"
       ? "Defend or improve the proposal with testable specifics; concede valid weaknesses."
       : "Stress-test novelty, assumptions, feasibility, and evaluation; propose decisive tests.",
+    "Keep claim under 1200 Chinese characters and provide at most 4 concise evidence items.",
     `Return {"round":${input.round},"model":${JSON.stringify(input.model)},"role":${JSON.stringify(input.role)},"claim":string,"evidence":string[]}.`,
     JSON_ONLY,
     `Idea:\n${JSON.stringify(input.idea)}`,
@@ -133,11 +134,11 @@ export function debateDecisionPrompt(input: {
     "Approve only if impact, novelty, falsifiability, and the 8-H100/7-day budget remain defensible. For revise, return a targeted finalIdea incorporating agreed changes instead of requesting a new proposal.",
     input.mayExtend
       ? "List only material unresolved questions that another debate round could resolve."
-      : "This is the final round; give the best available consensus and any genuinely unresolved questions.",
+      : 'This is the final round. decision must be "approve" or "reject"; give the best available consensus and any genuinely unresolved questions.',
     JSON_ONLY,
     `Rounds completed: ${input.round}`,
     `Idea:\n${JSON.stringify(input.idea)}`,
     `Reference ledger (top compact entries):\n${JSON.stringify(compactReferences(input.references ?? []))}`,
-    `Recent debate turns:\n${JSON.stringify(input.turns.slice(-6))}`,
+    `Recent debate turns:\n${JSON.stringify(input.turns.slice(-4))}`,
   ].join("\n\n");
 }
