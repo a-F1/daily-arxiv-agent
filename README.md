@@ -45,6 +45,15 @@ BibTeX、公式和必要技术专名可保留原文，英文论文输入本身�
 `releaseDate`、`announcementType` 和 `releaseSourceUrl`，报告保存完整
 `selectionPolicy`。某领域不足三篇时保留实际数量并记录缺口，不跨日回填。
 
+在领域评分和每领域三篇配额之前，流水线还执行
+`safety-security-attack-defense-v1` 硬排除。它使用标题、摘要和 arXiv
+分类进行确定性主题判断，覆盖 AI safety/alignment、security/cybersecurity、
+attack/adversarial attack、jailbreak、prompt injection、poisoning、backdoor、
+red teaming、defense/mitigation/guardrail 及对应中文主题。单独出现 `safe`、
+一般统计 `robustness`、普通 detection 或 type-safe API 不会触发，除非同时存在
+明确安全攻防语境。每次报告只保存排除总数及可审计 reason code 统计，不把被排除
+论文展示为推荐内容，也不会因领域不足三篇而回填。
+
 仓库没有报告数据时仍能完成构建。周末、假日或官方空批次会快速生成
 `releaseStatus=no-release` 的零论文报告且不调用模型。
 

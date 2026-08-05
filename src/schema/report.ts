@@ -322,6 +322,33 @@ export const DomainResearchSchema = z
   .strict();
 export type DomainResearch = z.infer<typeof DomainResearchSchema>;
 
+export const ExcludedTopicReasonCodeSchema = z.enum([
+  "AI_SAFETY_ALIGNMENT",
+  "SECURITY_CYBERSECURITY",
+  "ATTACK_ADVERSARIAL",
+  "JAILBREAK_PROMPT_INJECTION",
+  "POISONING_BACKDOOR",
+  "DEFENSE_MITIGATION",
+  "RED_TEAM_EXPLOIT",
+  "CHINESE_SECURITY_TOPIC",
+]);
+export type ExcludedTopicReasonCode = z.infer<
+  typeof ExcludedTopicReasonCodeSchema
+>;
+
+export const ExclusionSummarySchema = z
+  .object({
+    totalExcluded: z.number().int().nonnegative(),
+    byReason: z
+      .partialRecord(
+        ExcludedTopicReasonCodeSchema,
+        z.number().int().nonnegative(),
+      )
+      .default({}),
+  })
+  .strict();
+export type ExclusionSummary = z.infer<typeof ExclusionSummarySchema>;
+
 export const SelectionPolicySchema = z
   .object({
     source: z.literal("arxiv-rss"),
@@ -335,6 +362,8 @@ export const SelectionPolicySchema = z
     ),
     strictSameDay: z.literal(true),
     maxPerDomain: z.number().int().positive(),
+    hardExcludedTopicsEnabled: z.boolean().default(false),
+    excludedTopicPolicyVersion: NonEmptyString.optional(),
   })
   .strict();
 export type SelectionPolicy = z.infer<typeof SelectionPolicySchema>;
@@ -346,6 +375,7 @@ export const DailyReportSchema = z
     generatedAt: IsoDateTime,
     releaseStatus: z.enum(["complete", "partial", "no-release"]).default("complete"),
     selectionPolicy: SelectionPolicySchema.optional(),
+    exclusionSummary: ExclusionSummarySchema.optional(),
     domains: z.array(DomainSchema).min(1),
     papers: z.array(ReportPaperSchema),
     domainResearch: z.array(DomainResearchSchema),

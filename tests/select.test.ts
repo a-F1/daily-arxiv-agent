@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DOMAINS } from "../src/domains.js";
 import { type ArxivPaper, ArxivPaperSchema } from "../src/schema/report.js";
 import {
+  classifyExcludedTopic,
   preRankPapers,
   scorePaperForDomain,
   selectPapers,
@@ -123,5 +124,93 @@ describe("deterministic selection", () => {
 
     expect(selected).toHaveLength(1);
     expect(selected[0]?.score.domainId).toBe("agent");
+  });
+
+  it.each([
+    ["Adversarial Attack on Tool-Using Agents", "We compromise agent planning.", "ATTACK_ADVERSARIAL"],
+    ["A Defense for Language Model Agents", "We block malicious model attacks.", "DEFENSE_MITIGATION"],
+    ["AI Safety Alignment for Autonomous Agents", "We study harmless behavior.", "AI_SAFETY_ALIGNMENT"],
+    ["Jailbreaking Long-Horizon Agents", "A new jailbreak benchmark.", "JAILBREAK_PROMPT_INJECTION"],
+    ["Indirect Prompt Injection in Web Agents", "Prompts alter tool behavior.", "JAILBREAK_PROMPT_INJECTION"],
+    ["Memory Poisoning in Multi-Agent Systems", "Injected memories corrupt decisions.", "POISONING_BACKDOOR"],
+    ["Backdoor Triggers for Language Models", "Hidden triggers alter outputs.", "POISONING_BACKDOOR"],
+    ["面向智能体的提示注入与越狱研究", "分析恶意提示如何改变工具调用。", "CHINESE_SECURITY_TOPIC"],
+  ])("hard-excludes %s", (title, abstract, reasonCode) => {
+    const decision = classifyExcludedTopic(
+      paper("2608.01000", title, abstract),
+    );
+    expect(decision.excluded).toBe(true);
+    expect(decision.reasonCodes).toContain(reasonCode);
+  });
+
+  it("hard-excludes security-category papers before scoring", () => {
+    const candidate = paper(
+      "2608.01001",
+      "A New Protocol for Distributed Systems",
+      "We present a protocol with formal guarantees.",
+      "cs.CR",
+    );
+    expect(classifyExcludedTopic(candidate).reasonCodes).toContain(
+      "SECURITY_CYBERSECURITY",
+    );
+    expect(
+      preRankPapers([candidate], DOMAINS, { asOfDate: "2026-08-04" }),
+    ).toEqual([]);
+  });
+
+  it.each([
+    [
+      "Robust Training of Vision Transformers",
+      "We improve statistical robustness to ordinary distribution shift without studying attacks.",
+    ],
+    [
+      "Safe Resource Cleanup for Agent Runtimes",
+      "A type-safe API closes file handles and prevents memory leaks.",
+    ],
+    [
+      "Robot Control Within a Safe Operating Range",
+      "The controller respects actuator limits during routine manipulation.",
+    ],
+    [
+      "Reliable Object Detection Under Weather Shift",
+      "The detector remains robust under rain and illumination changes.",
+    ],
+  ])("does not falsely exclude %s", (title, abstract) => {
+    expect(
+      classifyExcludedTopic(paper("2608.02000", title, abstract)).excluded,
+    ).toBe(false);
+  });
+
+  it("never backfills excluded papers when a domain is below quota", () => {
+    const eligible = paper(
+      "2608.03000",
+      "Tool-Using Agent Planning",
+      "An agent for planning, memory, and tool use.",
+    );
+    const excluded = [
+      paper(
+        "2608.03001",
+        "AI Safety for Tool-Using Agents",
+        "Alignment for autonomous agents.",
+      ),
+      paper(
+        "2608.03002",
+        "Prompt Injection in Tool-Using Agents",
+        "An attack on agent planning.",
+      ),
+      paper(
+        "2608.03003",
+        "Defense for Tool-Using Agents",
+        "A guardrail against malicious attacks.",
+      ),
+    ];
+
+    const selected = selectPapers([eligible, ...excluded], DOMAINS, {
+      asOfDate: "2026-08-04",
+      maxPerDomain: 3,
+    });
+    expect(selected.map(({ paper: item }) => item.baseArxivId)).toEqual([
+      eligible.baseArxivId,
+    ]);
   });
 });

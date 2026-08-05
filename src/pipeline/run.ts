@@ -17,6 +17,9 @@ import {
   type Domain,
   type DomainId,
   type DomainResearch,
+  type ExclusionSummary,
+  type ExcludedTopicReasonCode,
+  type ArxivPaper,
   type PaperSummary,
   type ResearchIdea,
   ChineseResearchIdeaSchema,
@@ -43,7 +46,10 @@ import {
   type IdeaResult,
   type PriorArtSearch,
 } from "./ideas.js";
-import { selectPapers } from "./select.js";
+import {
+  classifyExcludedTopic,
+  selectPapers,
+} from "./select.js";
 import { summarizePapers } from "./summarize.js";
 
 interface DomainCheckpoint {
@@ -66,7 +72,7 @@ interface DailyCheckpoint {
   updatedAt: string;
 }
 
-const PIPELINE_VERSION = "daily-research-v3-strict-release";
+const PIPELINE_VERSION = "daily-research-v4-hard-topic-exclusions";
 const SELECTION_POLICY: SelectionPolicy = {
   source: "arxiv-rss",
   timeZone: "America/New_York",
@@ -75,6 +81,8 @@ const SELECTION_POLICY: SelectionPolicy = {
   excludedAnnouncementTypes: ["replace", "replace-cross", "unknown"],
   strictSameDay: true,
   maxPerDomain: 3,
+  hardExcludedTopicsEnabled: true,
+  excludedTopicPolicyVersion: "safety-security-attack-defense-v1",
 };
 
 export interface CheckpointStore {
@@ -127,6 +135,7 @@ export interface DailyRunOptions {
   resolvedModels?: ResolvedModels;
   releaseStatus?: "complete" | "partial";
   selectionPolicy?: SelectionPolicy;
+  exclusionSummary?: ExclusionSummary;
   checkpointStore?: CheckpointStore;
   now?: () => Date;
 }
@@ -447,6 +456,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     generatedAt: now().toISOString(),
     releaseStatus: options.releaseStatus ?? "complete",
     selectionPolicy: options.selectionPolicy ?? SELECTION_POLICY,
+    exclusionSummary: options.exclusionSummary,
     domains: options.domains,
     papers: reportPapers,
     domainResearch,
@@ -458,6 +468,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         inputHash: hash,
         notes: [
           `严格使用 ${options.date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
+          `硬排除 safety/security/attack/defense 主题；共排除 ${options.exclusionSummary?.totalExcluded ?? 0} 篇，reason code 统计：${JSON.stringify(options.exclusionSummary?.byReason ?? {})}`,
           `模型：摘要=${models.summary.id}；研究构想=${models.idea.id}；辩论 Claude=${models.claude.id}；辩论 OpenAI=${models.openai.id}`,
           `用量：${budget.snapshot().runs} 次调用，${budget.snapshot().totalTokens} 个 token`,
           `流水线版本：${PIPELINE_VERSION}；提示词版本：${PROMPT_VERSION}`,
@@ -523,10 +534,40 @@ function releaseCoverage(
   return { status: warnings.length > 0 ? "partial" : "complete", warnings };
 }
 
+export function applyHardTopicExclusions(
+  papers: readonly ArxivPaper[],
+): { eligible: ArxivPaper[]; summary: ExclusionSummary } {
+  const eligible: ArxivPaper[] = [];
+  const byReason: Partial<Record<ExcludedTopicReasonCode, number>> = {};
+  let totalExcluded = 0;
+  for (const paper of papers) {
+    const decision = classifyExcludedTopic(paper);
+    if (!decision.excluded) {
+      eligible.push(paper);
+      continue;
+    }
+    totalExcluded += 1;
+    console.log(JSON.stringify({
+      event: "paper_hard_excluded",
+      paperId: paper.baseArxivId,
+      reasonCodes: decision.reasonCodes,
+      matchedEvidence: decision.matchedEvidence,
+    }));
+    for (const reason of decision.reasonCodes) {
+      byReason[reason] = (byReason[reason] ?? 0) + 1;
+    }
+  }
+  return { eligible, summary: { totalExcluded, byReason } };
+}
+
 function emptyReleaseReport(
   date: string,
   releaseCount: number,
   generatedAt: string,
+  exclusionSummary: ExclusionSummary = {
+    totalExcluded: 0,
+    byReason: {},
+  },
 ): DailyReport {
   const noRelease = releaseCount === 0;
   return DailyReportSchema.parse({
@@ -535,6 +576,7 @@ function emptyReleaseReport(
     generatedAt,
     releaseStatus: noRelease ? "no-release" : "partial",
     selectionPolicy: SELECTION_POLICY,
+    exclusionSummary,
     domains: DOMAINS,
     papers: [],
     domainResearch: [],
@@ -546,12 +588,15 @@ function emptyReleaseReport(
         notes: [
           `严格使用 ${date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
           `官方同日发布公告数量：${releaseCount}`,
+          `硬排除主题论文数量：${exclusionSummary.totalExcluded}；reason code 统计：${JSON.stringify(exclusionSummary.byReason)}`,
         ],
       },
     ],
     warnings: noRelease
       ? [`arXiv 在 ${date} 没有发布 new/cross 类型的新论文公告。`]
-      : [`${date} 的同日发布论文均未达到当前领域相关性阈值。`],
+      : exclusionSummary.totalExcluded === releaseCount
+        ? [`${date} 的同日发布候选全部命中 safety/security/attack/defense 硬排除规则；未使用被排除论文回填。`]
+        : [`${date} 的剩余同日发布论文均未达到当前领域相关性阈值。`],
   });
 }
 
@@ -590,7 +635,8 @@ export async function runCli(): Promise<void> {
     await writeReport(outputPath, emptyReleaseReport(date, 0, new Date().toISOString()));
     return;
   }
-  const selected = selectPapers(papers, DOMAINS, {
+  const exclusions = applyHardTopicExclusions(papers);
+  const selected = selectPapers(exclusions.eligible, DOMAINS, {
     asOfDate: date,
     minimumScore: 2,
     maxPerDomain: 3,
@@ -598,7 +644,12 @@ export async function runCli(): Promise<void> {
   if (selected.length === 0) {
     await writeReport(
       outputPath,
-      emptyReleaseReport(date, papers.length, new Date().toISOString()),
+      emptyReleaseReport(
+        date,
+        papers.length,
+        new Date().toISOString(),
+        exclusions.summary,
+      ),
     );
     return;
   }
@@ -642,6 +693,7 @@ export async function runCli(): Promise<void> {
     cwd,
     releaseStatus: coverage.status,
     selectionPolicy: SELECTION_POLICY,
+    exclusionSummary: exclusions.summary,
     searchPriorArt: async (query) =>
       openAlex.searchPriorArt({
         title: query,

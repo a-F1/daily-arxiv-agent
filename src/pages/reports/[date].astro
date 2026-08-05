@@ -44,6 +44,7 @@ const generated = report.generatedAt
         <span>来源 arXiv</span>
       </div>
       {report.selectionPolicy && <p class="release-policy">抓取规则：{report.selectionPolicy}</p>}
+      {report.exclusionSummary && <p class="release-policy">硬排除审计：{report.exclusionSummary}</p>}
       {report.warnings.length > 0 && (
         <ul class="report-warnings">{report.warnings.map((warning) => <li>{warning}</li>)}</ul>
       )}

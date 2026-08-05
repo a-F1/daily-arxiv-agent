@@ -1,12 +1,23 @@
 import type { Domain, DomainId } from "../schema/report.js";
 import {
   PaperScoreSchema,
+  ExcludedTopicReasonCodeSchema,
   type ArxivPaper,
+  type ExcludedTopicReasonCode,
   type PaperScore,
   type ScoredPaper,
 } from "../schema/report.js";
 
-export const SELECTION_ALGORITHM_VERSION = "pre-rank-v1";
+export const SELECTION_ALGORITHM_VERSION = "pre-rank-v2-hard-topic-exclusions";
+
+export const EXCLUDED_TOPIC_REASON_CODES =
+  ExcludedTopicReasonCodeSchema.options;
+
+export interface ExcludedTopicDecision {
+  excluded: boolean;
+  reasonCodes: ExcludedTopicReasonCode[];
+  matchedEvidence: string[];
+}
 
 export interface SelectionOptions {
   /** ISO date used as the deterministic recency anchor. */
@@ -27,6 +38,172 @@ function normalized(value: string): string {
 function contains(haystack: string, needle: string): boolean {
   const normalizedNeedle = normalized(needle).trim();
   return normalizedNeedle.length > 0 && haystack.includes(` ${normalizedNeedle} `);
+}
+
+function matchEvidence(
+  value: string,
+  patterns: readonly RegExp[],
+): string[] {
+  return patterns.flatMap((pattern) => {
+    const match = value.match(pattern);
+    return match?.[0] ? [match[0]] : [];
+  });
+}
+
+/**
+ * Hard topic gate applied before domain scoring.
+ *
+ * Generic "safe" and "robustness" are deliberately not standalone triggers:
+ * they require AI/security context so type safety, resource cleanup, operating
+ * ranges, and ordinary statistical robustness remain eligible.
+ */
+export function classifyExcludedTopic(
+  paper: Pick<ArxivPaper, "title" | "abstract" | "categories">,
+): ExcludedTopicDecision {
+  const title = paper.title.normalize("NFKC").toLocaleLowerCase("en-US");
+  const abstract = paper.abstract.normalize("NFKC").toLocaleLowerCase("en-US");
+  const combined = `${title}\n${abstract}`;
+  const reasons = new Set<ExcludedTopicReasonCode>();
+  const evidence = new Set<string>();
+  const add = (
+    code: ExcludedTopicReasonCode,
+    matches: readonly string[],
+  ): void => {
+    if (matches.length === 0) return;
+    reasons.add(code);
+    matches.forEach((value) => evidence.add(value));
+  };
+
+  add(
+    "AI_SAFETY_ALIGNMENT",
+    matchEvidence(combined, [
+      /\b(?:ai|artificial intelligence|model|llm|language model|agents?|agentic|robot) safety\b/gi,
+      /\b(?:safety alignment|safe alignment|alignment safety)\b/gi,
+      /\b(?:safe|harmless) (?:ai|llm|language model|agent system|agentic system)\b/gi,
+    ]),
+  );
+  add(
+    "AI_SAFETY_ALIGNMENT",
+    matchEvidence(title, [
+      /\bsafe (?:reinforcement learning|policy learning|control|exploration)\b/gi,
+    ]),
+  );
+
+  if (paper.categories.some((category) => category.toLowerCase() === "cs.cr")) {
+    add("SECURITY_CYBERSECURITY", ["category:cs.CR"]);
+  }
+  add(
+    "SECURITY_CYBERSECURITY",
+    matchEvidence(combined, [
+      /\bcyber[ -]?security\b/gi,
+      /\bsecurity (?:of|for|in) (?:ai|llms?|language models?|agents?|models?|systems?|networks?|software)\b/gi,
+    ]),
+  );
+  add(
+    "SECURITY_CYBERSECURITY",
+    matchEvidence(title, [
+      /\bsecurity\b/gi,
+      /\bsecure (?:ai|llm|agent|model|system|inference|training)\b/gi,
+    ]),
+  );
+  if (
+    /\bsecurity\b/i.test(abstract) &&
+    /\b(?:threat|malicious|vulnerabilit(?:y|ies)|privacy|attack|defen[cs]e|exploit)\b/i.test(
+      abstract,
+    )
+  ) {
+    add("SECURITY_CYBERSECURITY", ["security-context"]);
+  }
+
+  add(
+    "ATTACK_ADVERSARIAL",
+    matchEvidence(combined, [
+      /\badversarial attacks?\b/gi,
+      /\battacks? (?:against|on)\b/gi,
+      /\battacks? (?:against|on) (?:ai|llm|language model|agent|model|system|network)\b/gi,
+      /\b(?:ai|llm|language model|agent|model|system|network) attacks?\b/gi,
+      /\battack surface\b/gi,
+    ]),
+  );
+  add("ATTACK_ADVERSARIAL", matchEvidence(title, [/\battacks?\b/gi]));
+
+  add(
+    "JAILBREAK_PROMPT_INJECTION",
+    matchEvidence(combined, [
+      /\bjailbreak(?:ing|s)?\b/gi,
+      /\bprompt injection\b/gi,
+      /\bindirect prompt injection\b/gi,
+    ]),
+  );
+  add(
+    "POISONING_BACKDOOR",
+    matchEvidence(combined, [
+      /\b(?:data|model|memory|training|knowledge|retrieval) poison(?:ing|ed)?\b/gi,
+      /\bbackdoors?\b/gi,
+      /\btrojan attacks?\b/gi,
+    ]),
+  );
+
+  const securityContext =
+    /\b(?:security|cyber|threat|malicious|vulnerabilit(?:y|ies)|attack|adversarial examples?|jailbreak|prompt injection|poison|backdoor|red team)\b/i;
+  if (securityContext.test(combined)) {
+    add(
+      "DEFENSE_MITIGATION",
+      matchEvidence(combined, [
+        /\bdefen[cs]e\b/gi,
+        /\bdefen[cs]e against\b/gi,
+        /\battack detection\b/gi,
+        /\bthreat detection\b/gi,
+        /\b(?:attack|threat|security) mitigation\b/gi,
+        /\bguardrails?\b/gi,
+        /\b(?:adversarial|attack|security) robustness\b/gi,
+      ]),
+    );
+  }
+  add(
+    "DEFENSE_MITIGATION",
+    matchEvidence(title, [/\bdefen[cs]e\b/gi, /\bguardrails?\b/gi]),
+  );
+  add(
+    "RED_TEAM_EXPLOIT",
+    matchEvidence(combined, [
+      /\bred[ -]?team(?:ing)?\b/gi,
+      /\b(?:security|software|system|model) exploits?\b/gi,
+      /\bexploit(?:ation)? of (?:a )?vulnerabilit/gi,
+    ]),
+  );
+
+  add(
+    "CHINESE_SECURITY_TOPIC",
+    matchEvidence(combined, [
+      /人工智能安全|模型安全|大模型安全|智能体安全|机器人安全|安全对齐|对齐安全/gu,
+      /网络安全|信息安全|提示注入|越狱|投毒|后门|红队|攻防|对抗攻击/gu,
+    ]),
+  );
+  add(
+    "CHINESE_SECURITY_TOPIC",
+    matchEvidence(title, [/攻击|防御/gu]),
+  );
+  if (
+    /安全|威胁|恶意|漏洞|攻击|越狱|投毒|后门/u.test(combined)
+  ) {
+    add(
+      "CHINESE_SECURITY_TOPIC",
+      matchEvidence(combined, [/攻击检测|威胁检测|攻击缓解|安全缓解|安全护栏|安全鲁棒性|防御/gu]),
+    );
+    if (
+      /攻击/u.test(combined) &&
+      /恶意|威胁|漏洞|对抗|模型|系统|网络|智能体|提示|防御/u.test(combined)
+    ) {
+      add("CHINESE_SECURITY_TOPIC", ["攻击语境"]);
+    }
+  }
+
+  return {
+    excluded: reasons.size > 0,
+    reasonCodes: [...reasons].sort(),
+    matchedEvidence: [...evidence].sort(),
+  };
 }
 
 function evidenceScore(text: string, patterns: readonly RegExp[], cap: number): number {
@@ -178,6 +355,7 @@ export function preRankPapers(
   if (domains.length === 0) return [];
   const uniquePapers = new Map<string, ArxivPaper>();
   for (const paper of papers) {
+    if (classifyExcludedTopic(paper).excluded) continue;
     const current = uniquePapers.get(paper.baseArxivId);
     if (
       !current ||

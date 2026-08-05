@@ -58,4 +58,26 @@ describe("report idea visibility", () => {
     expect(report).toContain('id="research-ideas"');
     expect(report).toContain("IdeaCard");
   });
+
+  it("normalizes and exposes the hard-exclusion audit without paper details", () => {
+    const report = normalizeReport("2026-08-05.json", {
+      reportDate: "2026-08-05",
+      selectionPolicy: {
+        hardExcludedTopicsEnabled: true,
+      },
+      exclusionSummary: {
+        totalExcluded: 4,
+        byReason: {
+          ATTACK_ADVERSARIAL: 2,
+          AI_SAFETY_ALIGNMENT: 2,
+        },
+      },
+      papers: [],
+      domainResearch: [],
+    });
+
+    expect(report.selectionPolicy).toContain("评分前硬排除");
+    expect(report.exclusionSummary).toContain("硬排除 4 篇");
+    expect(report.exclusionSummary).toContain("ATTACK_ADVERSARIAL=2");
+  });
 });

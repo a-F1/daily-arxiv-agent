@@ -4,9 +4,11 @@ import {
   ChinesePaperSummarySchema,
   ChineseRefinementSchema,
   ChineseResearchIdeaSchema,
+  ExclusionSummarySchema,
   PaperSummarySchema,
   ResearchIdeaSchema,
   RefinementSchema,
+  SelectionPolicySchema,
   isSimplifiedChineseNarrative,
 } from "../src/schema/report.js";
 
@@ -136,5 +138,29 @@ describe("simplified Chinese narrative schemas", () => {
       claim: "This entire argument remains in English.",
       evidence: [],
     }).success).toBe(false);
+  });
+
+  it("keeps old selection policy data compatible and validates reason codes", () => {
+    expect(SelectionPolicySchema.parse({
+      source: "arxiv-rss",
+      timeZone: "America/New_York",
+      dateField: "item.pubDate",
+      includedAnnouncementTypes: ["new"],
+      excludedAnnouncementTypes: ["replace", "replace-cross", "unknown"],
+      strictSameDay: true,
+      maxPerDomain: 3,
+    }).hardExcludedTopicsEnabled).toBe(false);
+
+    expect(ExclusionSummarySchema.parse({
+      totalExcluded: 2,
+      byReason: {
+        ATTACK_ADVERSARIAL: 1,
+        AI_SAFETY_ALIGNMENT: 1,
+      },
+    }).totalExcluded).toBe(2);
+    expect(() => ExclusionSummarySchema.parse({
+      totalExcluded: 1,
+      byReason: { UNKNOWN_REASON: 1 },
+    })).toThrow();
   });
 });

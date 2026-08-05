@@ -33,6 +33,7 @@ export type Report = {
   domainResearch: DomainResearch[];
   releaseStatus: "complete" | "partial" | "no-release";
   selectionPolicy?: string;
+  exclusionSummary?: string;
   warnings: string[];
 };
 
@@ -172,6 +173,7 @@ function paper(value: unknown, index: number, domainNames: Map<string, string>):
 
 export function normalizeReport(path: string, value: unknown): Report {
   const report = object(value);
+  const selectionPolicy = object(report.selectionPolicy);
   const fromFilename = path.split("/").pop()?.replace(/\.json$/, "") ?? "";
   const domainNames = new Map(
     (Array.isArray(report.domains) ? report.domains : []).map((value) => {
@@ -245,8 +247,13 @@ export function normalizeReport(path: string, value: unknown): Report {
       report.releaseStatus === "no-release" || report.releaseStatus === "partial"
         ? report.releaseStatus
         : "complete",
-    selectionPolicy: Object.keys(object(report.selectionPolicy)).length
-      ? "使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross，绝不使用旧日期论文回填。"
+    selectionPolicy: Object.keys(selectionPolicy).length
+      ? `使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross；${selectionPolicy.hardExcludedTopicsEnabled === true ? "在评分前硬排除 safety、security、attack、defense 及相关攻防主题；绝不使用被排除或旧日期论文回填。" : "绝不使用旧日期论文回填。"}`
+      : undefined,
+    exclusionSummary: Object.keys(object(report.exclusionSummary)).length
+      ? `硬排除 ${Number(object(report.exclusionSummary).totalExcluded ?? 0)} 篇；reason code：${Object.entries(object(object(report.exclusionSummary).byReason))
+          .map(([reason, count]) => `${reason}=${Number(count)}`)
+          .join("、") || "无"}`
       : undefined,
     warnings: texts(report.warnings),
   };
