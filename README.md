@@ -31,6 +31,12 @@ motivation / method / experiment setup / results / training resources，以及�
 最终 idea 会在首页最新简报区和报告页论文列表之前展示，可展开查看 hypothesis、
 method、evaluation、resources、refinement、debate 与 references。
 
+下一期开始，摘要、研究构想、改进记录、模型辩论和 provenance notes 的叙述字段
+必须使用简体中文。每个模型提示都包含统一语言合同，流水线还使用独立的中文
+Zod schema 检查汉字占比并拒绝整段英文或常见繁体字；首次语言校验失败会进行
+一次带明确错误原因的纠正重试。原始论文标题、作者、模型名、arXiv ID、URL、
+BibTeX、公式和必要技术专名可保留原文，英文论文输入本身不参与输出语言校验。
+
 报告日期严格表示 arXiv 的 **announcement/release batch date**，以
 `America/New_York` 为时区，并以官方 RSS 每个 item 的 `pubDate` 为证据。
 只纳入 `announce_type=new`（首次发布）与 `cross`（同批次跨分类发布）；

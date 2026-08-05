@@ -10,40 +10,40 @@ const { research, expanded = false } = Astro.props;
 ---
 
 <article class="idea-card" data-pagefind-body>
-  <p class="eyebrow">{research.domain} · {research.rounds} 轮旗舰模型 DEBATE</p>
-  <h3>{research.title || `${research.domain} 可行研究 Idea`}</h3>
-  <p class="idea-hypothesis"><b>Hypothesis</b> {research.hypothesis}</p>
+  <p class="eyebrow">{research.domain} · {research.rounds} 轮旗舰模型辩论</p>
+  <h3>{research.title || `${research.domain} 可行研究构想`}</h3>
+  <p class="idea-hypothesis"><b>研究假设</b> {research.hypothesis}</p>
   <details open={expanded}>
     <summary>展开完整研究方案</summary>
     <div class="idea-detail-grid">
       <section>
-        <b>Method</b>
+        <b>研究方法</b>
         <ul>{research.method.map((item) => <li>{item}</li>)}</ul>
       </section>
       <section>
-        <b>Evaluation</b>
+        <b>评估方案</b>
         <ul>{research.evaluation.map((item) => <li>{item}</li>)}</ul>
       </section>
       <section>
-        <b>Resources</b>
+        <b>资源需求</b>
         <ul>{research.resources.map((item) => <li>{item}</li>)}</ul>
       </section>
       <section>
-        <b>Expected contribution</b>
+        <b>预期贡献</b>
         <p>{research.contribution}</p>
       </section>
       <section>
-        <b>Refinement</b>
+        <b>改进记录</b>
         <ul>{research.refinements.map((item) => <li>{item}</li>)}</ul>
       </section>
       <section>
-        <b>Debate</b>
+        <b>辩论记录</b>
         <ul>{research.debate.map((item) => <li>{item}</li>)}</ul>
       </section>
     </div>
     {research.references.length > 0 && (
       <div class="references">
-        <b>References</b>
+        <b>参考文献</b>
         <ul>
           {research.references.map((reference) => (
             <li>

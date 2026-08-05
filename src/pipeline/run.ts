@@ -19,8 +19,8 @@ import {
   type DomainResearch,
   type PaperSummary,
   type ResearchIdea,
+  ChineseResearchIdeaSchema,
   type SelectionPolicy,
-  ResearchIdeaSchema,
   type ScoredPaper,
 } from "../schema/report.js";
 import {
@@ -379,7 +379,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
               },
               references: domainState.idea.ledger,
             }),
-            schema: ResearchIdeaSchema,
+            schema: ChineseResearchIdeaSchema,
             model: models.idea,
             idempotencyKey: `${options.date}:${domain.id}:targeted-revision`,
             context: {
@@ -457,10 +457,10 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         retrievedAt: now().toISOString(),
         inputHash: hash,
         notes: [
-          `Strict arXiv release batch ${options.date} (America/New_York); item.pubDate must equal reportDate; include new/cross; exclude replace/replace-cross`,
-          `Models: summary=${models.summary.id}; idea=${models.idea.id}; debate Claude=${models.claude.id}; debate OpenAI=${models.openai.id}`,
-          `Usage: ${budget.snapshot().runs} runs, ${budget.snapshot().totalTokens} tokens`,
-          `Pipeline: ${PIPELINE_VERSION}; prompts: ${PROMPT_VERSION}`,
+          `严格使用 ${options.date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
+          `模型：摘要=${models.summary.id}；研究构想=${models.idea.id}；辩论 Claude=${models.claude.id}；辩论 OpenAI=${models.openai.id}`,
+          `用量：${budget.snapshot().runs} 次调用，${budget.snapshot().totalTokens} 个 token`,
+          `流水线版本：${PIPELINE_VERSION}；提示词版本：${PROMPT_VERSION}`,
         ],
       },
     ],
@@ -517,7 +517,7 @@ function releaseCoverage(
   const warnings = DOMAINS.flatMap((domain) => {
     const count = counts.get(domain.id) ?? 0;
     return count < SELECTION_POLICY.maxPerDomain
-      ? [`${domain.name}: selected ${count}/${SELECTION_POLICY.maxPerDomain} strict same-day releases; deficit ${SELECTION_POLICY.maxPerDomain - count}.`]
+      ? [`${domain.name}：严格同日发布论文入选 ${count}/${SELECTION_POLICY.maxPerDomain} 篇，缺少 ${SELECTION_POLICY.maxPerDomain - count} 篇。`]
       : [];
   });
   return { status: warnings.length > 0 ? "partial" : "complete", warnings };
@@ -544,14 +544,14 @@ function emptyReleaseReport(
         source: "arXiv RSS",
         retrievedAt: generatedAt,
         notes: [
-          `Strict arXiv release batch ${date} (America/New_York); item.pubDate must equal reportDate; include new/cross; exclude replace/replace-cross`,
-          `Official same-day release announcements found: ${releaseCount}`,
+          `严格使用 ${date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
+          `官方同日发布公告数量：${releaseCount}`,
         ],
       },
     ],
     warnings: noRelease
-      ? [`arXiv published no new/cross release announcements for ${date}.`]
-      : [`No same-day releases met the configured domain relevance threshold for ${date}.`],
+      ? [`arXiv 在 ${date} 没有发布 new/cross 类型的新论文公告。`]
+      : [`${date} 的同日发布论文均未达到当前领域相关性阈值。`],
   });
 }
 

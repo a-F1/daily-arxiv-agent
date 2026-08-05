@@ -6,9 +6,10 @@ import {
   debateTurnPrompt,
 } from "../agents/prompts.js";
 import {
+  ChineseDebateTurnSchema,
+  ChineseResearchIdeaSchema,
   DebateSchema,
-  DebateTurnSchema,
-  ResearchIdeaSchema,
+  SimplifiedChineseNarrativeSchema,
   type Debate,
   type DebateTurn,
   type ResearchIdea,
@@ -22,11 +23,11 @@ export interface DebateOutcome {
 
 const ModeratorDecisionSchema = z
   .object({
-    topic: z.string().trim().min(1),
-    consensus: z.string().trim().min(1),
-    unresolvedQuestions: z.array(z.string().trim().min(1)),
+    topic: SimplifiedChineseNarrativeSchema,
+    consensus: SimplifiedChineseNarrativeSchema,
+    unresolvedQuestions: z.array(SimplifiedChineseNarrativeSchema),
     decision: z.enum(["approve", "revise", "reject", "continue"]),
-    finalIdea: ResearchIdeaSchema,
+    finalIdea: ChineseResearchIdeaSchema,
   })
   .strict();
 
@@ -109,7 +110,7 @@ export async function debateIdea(options: {
           round,
           history: turns,
         }),
-        schema: DebateTurnSchema,
+        schema: ChineseDebateTurnSchema,
         model: options.advocateModel,
         idempotencyKey: `${options.idempotencyPrefix}:debate:${round}:advocate`,
         context: {
@@ -137,7 +138,7 @@ export async function debateIdea(options: {
           round,
           history: turns,
         }),
-        schema: DebateTurnSchema,
+        schema: ChineseDebateTurnSchema,
         model: options.skepticModel,
         idempotencyKey: `${options.idempotencyPrefix}:debate:${round}:skeptic`,
         context: {

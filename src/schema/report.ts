@@ -5,6 +5,28 @@ const IsoDate = z.iso.date();
 const IsoDateTime = z.iso.datetime({ offset: true });
 const Url = z.url();
 
+const TraditionalChineseCharacters =
+  /[為與這個們來時後裡過學術驗結資風險題評證據應該將會]/u;
+
+export function isSimplifiedChineseNarrative(value: string): boolean {
+  const withoutMachineText = value
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\b(?:arXiv:?)?\d{4}\.\d{4,5}(?:v\d+)?\b/gi, "")
+    .replace(/\b[A-Z][A-Z0-9.-]{1,}\b/g, "");
+  const chineseCharacters = withoutMachineText.match(/[\u3400-\u9fff]/gu)?.length ?? 0;
+  const latinCharacters = withoutMachineText.match(/[A-Za-z]/g)?.length ?? 0;
+  return (
+    chineseCharacters >= 2 &&
+    chineseCharacters / Math.max(chineseCharacters + latinCharacters, 1) >= 0.15 &&
+    !TraditionalChineseCharacters.test(withoutMachineText)
+  );
+}
+
+export const SimplifiedChineseNarrativeSchema = NonEmptyString.refine(
+  isSimplifiedChineseNarrative,
+  "叙述字段必须以简体中文为主，不能是整段英文或繁体中文。",
+);
+
 export const DomainIdSchema = z.enum([
   "agent",
   "embodied-vla",
@@ -131,6 +153,17 @@ export const PaperSummarySchema = z
   .strict();
 export type PaperSummary = z.infer<typeof PaperSummarySchema>;
 
+export const ChinesePaperSummarySchema = PaperSummarySchema.extend({
+  oneLiner: SimplifiedChineseNarrativeSchema,
+  motivation: SimplifiedChineseNarrativeSchema,
+  method: SimplifiedChineseNarrativeSchema,
+  experimentSetup: SimplifiedChineseNarrativeSchema,
+  results: z.array(SimplifiedChineseNarrativeSchema).min(1),
+  trainingResources: SimplifiedChineseNarrativeSchema,
+  limitations: z.array(SimplifiedChineseNarrativeSchema),
+  significance: SimplifiedChineseNarrativeSchema,
+});
+
 export const ResearchIdeaSchema = z
   .object({
     title: NonEmptyString,
@@ -156,6 +189,20 @@ export const ResearchIdeaSchema = z
   .strict();
 export type ResearchIdea = z.infer<typeof ResearchIdeaSchema>;
 
+export const ChineseResearchIdeaSchema = ResearchIdeaSchema.extend({
+  title: SimplifiedChineseNarrativeSchema,
+  hypothesis: SimplifiedChineseNarrativeSchema,
+  motivation: SimplifiedChineseNarrativeSchema,
+  method: z.array(SimplifiedChineseNarrativeSchema).min(1),
+  evaluation: z.array(SimplifiedChineseNarrativeSchema).min(1),
+  expectedContribution: SimplifiedChineseNarrativeSchema,
+  impactAssessment: SimplifiedChineseNarrativeSchema,
+  noveltyAssessment: SimplifiedChineseNarrativeSchema,
+  resourceAssessment: SimplifiedChineseNarrativeSchema,
+  trainingResources: SimplifiedChineseNarrativeSchema,
+  risks: z.array(SimplifiedChineseNarrativeSchema),
+});
+
 export const RefinementSchema = z
   .object({
     round: z.number().int().positive(),
@@ -172,6 +219,14 @@ export const RefinementSchema = z
   .strict();
 export type Refinement = z.infer<typeof RefinementSchema>;
 
+export const ChineseRefinementSchema = RefinementSchema.extend({
+  originalIdeaTitle: SimplifiedChineseNarrativeSchema,
+  critiquesAddressed: z.array(SimplifiedChineseNarrativeSchema),
+  revisedHypothesis: SimplifiedChineseNarrativeSchema,
+  revisedMethod: z.array(SimplifiedChineseNarrativeSchema).min(1),
+  rationale: SimplifiedChineseNarrativeSchema,
+});
+
 export const DebateTurnSchema = z
   .object({
     round: z.number().int().positive(),
@@ -183,6 +238,11 @@ export const DebateTurnSchema = z
   })
   .strict();
 export type DebateTurn = z.infer<typeof DebateTurnSchema>;
+
+export const ChineseDebateTurnSchema = DebateTurnSchema.extend({
+  claim: SimplifiedChineseNarrativeSchema,
+  evidence: z.array(SimplifiedChineseNarrativeSchema),
+});
 
 export const DebateSchema = z
   .object({

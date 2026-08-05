@@ -6,9 +6,9 @@ import {
   refineIdeaPrompt,
 } from "../agents/prompts.js";
 import {
+  ChineseRefinementSchema,
+  ChineseResearchIdeaSchema,
   ReferenceSchema,
-  RefinementSchema,
-  ResearchIdeaSchema,
   type Reference,
   type Refinement,
   type ResearchIdea,
@@ -130,7 +130,7 @@ export async function developIdea(options: {
           options.domainName,
           options.rejectionFeedback,
         ),
-        schema: ResearchIdeaSchema,
+        schema: ChineseResearchIdeaSchema,
         model: options.model,
         idempotencyKey: `${options.idempotencyPrefix}:idea:${restart}:initial`,
         context: {
@@ -168,7 +168,7 @@ export async function developIdea(options: {
           references: [...ledger.values()],
           attempt: refinement,
         }),
-        schema: RefinementSchema,
+        schema: ChineseRefinementSchema,
         model: options.model,
         idempotencyKey: `${options.idempotencyPrefix}:idea:${restart}:review:${refinement}`,
         context: {
@@ -216,7 +216,7 @@ export async function developIdea(options: {
           refinement: review,
           references: [...ledger.values()],
         }),
-        schema: ResearchIdeaSchema,
+        schema: ChineseResearchIdeaSchema,
         model: options.model,
         idempotencyKey: `${options.idempotencyPrefix}:idea:${restart}:revise:${refinement}`,
         context: {

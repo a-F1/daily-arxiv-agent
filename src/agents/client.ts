@@ -207,6 +207,17 @@ function estimatedRunTokens(prompt: string): number {
   return Math.ceil(prompt.length / 4) + 8_192;
 }
 
+export function structuredCorrectionPrompt(
+  originalPrompt: string,
+  error: unknown,
+): string {
+  return (
+    `${originalPrompt}\n\n上一次响应未通过 JSON schema 或简体中文校验。` +
+    "请只返回纠正后的完整 JSON；所有叙述字段必须使用简体中文，字段名和枚举值保持不变。\n" +
+    `校验错误：${String(error).slice(0, 2_000)}`
+  );
+}
+
 async function waitForRun(
   run: Run,
   timeoutMs: number,
@@ -269,9 +280,7 @@ export class StructuredAgentSession {
         return schema.parse(extractJson(text));
       } catch (error) {
         lastError = error;
-        currentPrompt =
-          "Your previous response failed JSON schema validation. Return only a corrected complete JSON object.\n" +
-          `Validation error: ${String(error).slice(0, 2_000)}`;
+        currentPrompt = structuredCorrectionPrompt(prompt, error);
       }
     }
     throw new Error("Agent failed structured output validation twice.", {
@@ -358,10 +367,7 @@ export class AgentClient {
         ) {
           throw error;
         }
-        prompt =
-          `${options.prompt}\n\nYour previous response failed validation. ` +
-          `Return only corrected JSON matching every requested field.\n` +
-          `Validation error: ${String(error).slice(0, 2_000)}`;
+        prompt = structuredCorrectionPrompt(options.prompt, error);
       } finally {
         await agent[Symbol.asyncDispose]();
       }

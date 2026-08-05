@@ -3,7 +3,10 @@ import type { z } from "zod";
 import pLimit from "p-limit";
 import { AgentClient } from "../agents/client.js";
 import { summaryPrompt } from "../agents/prompts.js";
-import { PaperSummarySchema } from "../schema/report.js";
+import {
+  ChinesePaperSummarySchema,
+  PaperSummarySchema,
+} from "../schema/report.js";
 
 export type PaperSummary = z.infer<typeof PaperSummarySchema>;
 
@@ -37,7 +40,7 @@ export async function summarizePapers(options: {
     const paperId = paper.id ?? paper.arxivId ?? String(index);
     const summary = await options.client.promptJson({
       prompt: summaryPrompt(paper),
-      schema: PaperSummarySchema,
+      schema: ChinesePaperSummarySchema,
       model: options.model,
       idempotencyKey: `${options.idempotencyPrefix}:summary:${paperId}`,
       context: {

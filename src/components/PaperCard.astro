@@ -10,6 +10,12 @@ interface Props {
 const { paper, index, expanded = false } = Astro.props;
 const displayTitle = paper.titleZh || paper.title;
 const summary = paper.summaryZh || paper.summary || "暂无摘要。";
+const announcementLabel =
+  paper.announcementType === "new"
+    ? "首次发布"
+    : paper.announcementType === "cross"
+      ? "跨分类发布"
+      : paper.announcementType;
 ---
 
 <article
@@ -25,11 +31,11 @@ const summary = paper.summaryZh || paper.summary || "暂无摘要。";
       {paper.id && <span>{paper.id}</span>}
       {paper.releaseDate && (
         <span>
-          arXiv release date：
+          arXiv 发布日期：
           {paper.releaseSourceUrl ? (
             <a href={paper.releaseSourceUrl} target="_blank" rel="noreferrer">{paper.releaseDate}</a>
           ) : paper.releaseDate}
-          {paper.announcementType ? ` · ${paper.announcementType}` : ""}
+          {announcementLabel ? ` · ${announcementLabel}` : ""}
         </span>
       )}
     </div>
@@ -45,7 +51,7 @@ const summary = paper.summaryZh || paper.summary || "暂无摘要。";
     )}
     <div class="paper-actions">
       {paper.url && <a class="button button--dark" href={paper.url} target="_blank" rel="noreferrer">查看 arXiv ↗</a>}
-      {paper.pdfUrl && <a class="button button--plain" href={paper.pdfUrl} target="_blank" rel="noreferrer">PDF</a>}
+      {paper.pdfUrl && <a class="button button--plain" href={paper.pdfUrl} target="_blank" rel="noreferrer">论文 PDF</a>}
     </div>
   </div>
 </article>

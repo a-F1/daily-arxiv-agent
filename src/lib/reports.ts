@@ -125,12 +125,12 @@ function paper(value: unknown, index: number, domainNames: Map<string, string>):
     : texts(summary.keyResults);
   const summaryParts = [
     text(summary.oneLiner),
-    `Motivation: ${text(summary.motivation, text(summary.problem))}`,
-    `Method: ${text(summary.method, text(summary.approach))}`,
-    `Experiment setup: ${text(summary.experimentSetup)}`,
+    `研究动机：${text(summary.motivation, text(summary.problem))}`,
+    `研究方法：${text(summary.method, text(summary.approach))}`,
+    `实验设置：${text(summary.experimentSetup)}`,
     ...keyResults,
-    `Training resources: ${text(summary.trainingResources)}`,
-  ].filter((part) => !part.endsWith(": "));
+    `训练资源：${text(summary.trainingResources)}`,
+  ].filter((part) => !part.endsWith("："));
   const ideaList = prose(item.ideas, ["title", "hypothesis", "expectedContribution"]);
   const refinementList = prose(item.refinements, [
     "originalIdeaTitle",
@@ -219,7 +219,7 @@ export function normalizeReport(path: string, value: unknown): Report {
         "rationale",
       ]),
       debate: [
-        ...prose(debate.turns, ["model", "role", "claim"]),
+        ...prose(debate.turns, ["model", "claim"]),
         text(debate.consensus) ? `共识 — ${text(debate.consensus)}` : "",
         ...texts(debate.unresolvedQuestions).map((question) => `未决问题 — ${question}`),
       ].filter(Boolean),
@@ -246,7 +246,7 @@ export function normalizeReport(path: string, value: unknown): Report {
         ? report.releaseStatus
         : "complete",
     selectionPolicy: Object.keys(object(report.selectionPolicy)).length
-      ? "Official arXiv RSS item.pubDate in America/New_York; include new/cross announcements only; exclude replace/replace-cross; never backfill from older dates."
+      ? "使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross，绝不使用旧日期论文回填。"
       : undefined,
     warnings: texts(report.warnings),
   };

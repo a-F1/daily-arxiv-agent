@@ -1,11 +1,22 @@
 import type { RunResult } from "@cursor/sdk";
 import { describe, expect, it } from "vitest";
-import { RunBudget } from "../src/agents/client.js";
+import {
+  RunBudget,
+  structuredCorrectionPrompt,
+} from "../src/agents/client.js";
 import {
   readModelConfig,
   resolveConfiguredModel,
 } from "../src/agents/models.js";
-import { debateTurnPrompt } from "../src/agents/prompts.js";
+import {
+  debateDecisionPrompt,
+  debateTurnPrompt,
+  finalizeIdeaPrompt,
+  initialIdeaPrompt,
+  refineIdeaPrompt,
+  reviseRejectedIdeaPrompt,
+  summaryPrompt,
+} from "../src/agents/prompts.js";
 
 const models = [
   {
@@ -117,5 +128,42 @@ describe("debate context compaction", () => {
     });
     expect(prompt).not.toContain("claim-0");
     expect(prompt).toContain("claim-7");
+  });
+});
+
+describe("simplified Chinese output instructions", () => {
+  it("applies the same explicit language contract to every model stage", () => {
+    const prompts = [
+      summaryPrompt({ title: "Original English title" }),
+      initialIdeaPrompt([], "AI Agents"),
+      refineIdeaPrompt({ draft: {}, references: [], attempt: 1 }),
+      finalizeIdeaPrompt({ draft: {}, references: [] }),
+      reviseRejectedIdeaPrompt({ draft: {}, debate: {}, references: [] }),
+      debateTurnPrompt({
+        role: "advocate",
+        model: "test-model",
+        idea: {},
+        round: 1,
+        history: [],
+      }),
+      debateDecisionPrompt({
+        idea: {},
+        turns: [],
+        round: 3,
+        mayExtend: false,
+      }),
+    ];
+
+    for (const prompt of prompts) {
+      expect(prompt).toContain("所有叙述性字符串必须使用简体中文");
+      expect(prompt).toContain("原始论文标题、作者名、模型名");
+    }
+  });
+
+  it("builds one corrective retry that repeats the Chinese requirement", () => {
+    const correction = structuredCorrectionPrompt("原始任务", "language error");
+    expect(correction).toContain("原始任务");
+    expect(correction).toContain("简体中文校验");
+    expect(correction).toContain("字段名和枚举值保持不变");
   });
 });

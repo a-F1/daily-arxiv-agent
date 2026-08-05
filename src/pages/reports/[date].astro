@@ -31,13 +31,13 @@ const generated = report.generatedAt
       <a class="back-link" href={`${base}archive/`}>← 返回全部简报</a>
       <div class="report-title-row">
         <div>
-          <p class="eyebrow">DAILY RESEARCH REPORT</p>
+          <p class="eyebrow">每日研究报告</p>
           <h1>{formatDate(report.date)}</h1>
         </div>
         <span class="domain-tag">{report.papers.length} 篇精选</span>
       </div>
       <div class="report-provenance" aria-label="报告来源信息">
-        <span>arXiv release date：{report.date}</span>
+        <span>arXiv 发布日期：{report.date}</span>
         {generated && <span>生成于 {generated}</span>}
         {report.model && <span>模型 {report.model}</span>}
         {report.query && <span>检索 {report.query}</span>}
@@ -54,8 +54,8 @@ const generated = report.generatedAt
     <div class="paper-list">
       {report.domainResearch.length > 0 && (
         <section id="research-ideas" class="report-ideas" aria-labelledby="research-ideas-heading">
-          <p class="eyebrow">FINAL RESEARCH IDEAS</p>
-          <h2 id="research-ideas-heading">三个领域的最终可行 Idea</h2>
+          <p class="eyebrow">最终研究构想</p>
+          <h2 id="research-ideas-heading">三个领域的最终可行研究构想</h2>
           <p>先看可执行研究方向，再按需阅读支撑论文。每张卡片可展开查看完整方案。</p>
           <div class="idea-list">
             {report.domainResearch.map((research) => <IdeaCard research={research} expanded />)}
@@ -121,14 +121,14 @@ const generated = report.generatedAt
       {report.papers.length === 0 && (
         <div class="empty-state">
           <h2>{report.releaseStatus === "no-release" ? "本日 arXiv 无新发布" : "本期暂无同日入选论文"}</h2>
-          <p>系统不会用旧论文回填；请查看上方的 release date 与严格抓取规则。</p>
+          <p>系统不会用旧论文回填；请查看上方的发布日期与严格抓取规则。</p>
         </div>
       )}
     </div>
 
     <aside class="report-nav" aria-label="本期论文目录">
       <b>本期目录</b>
-      {report.domainResearch.length > 0 && <a href="#research-ideas">00 · 三个最终 Idea</a>}
+      {report.domainResearch.length > 0 && <a href="#research-ideas">00 · 三个最终研究构想</a>}
       {report.papers.map((paper, index) => (
         <a href={`#paper-${index + 1}`}>{String(index + 1).padStart(2, "0")} · {paper.titleZh || paper.title}</a>
       ))}
