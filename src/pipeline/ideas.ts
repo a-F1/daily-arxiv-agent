@@ -110,6 +110,7 @@ export async function developIdea(options: {
     ...(resume?.refinementHistory ?? []),
   ];
   let totalRefinements = resume?.totalRefinements ?? refinementHistory.length;
+  let fallbackIdea: ResearchIdea | undefined = resume?.draft;
 
   for (
     let restart = resume?.restart ?? 0;
@@ -153,6 +154,7 @@ export async function developIdea(options: {
         totalRefinements,
       });
     }
+    fallbackIdea = idea;
     resume = undefined;
 
     for (let refinement = firstRefinement; refinement <= 3; refinement += 1) {
@@ -231,6 +233,7 @@ export async function developIdea(options: {
         search: options.searchPriorArt,
         maxReferences,
       });
+      fallbackIdea = idea;
       await options.onCheckpoint?.({
         restart,
         refinement: refinement + 1,
@@ -242,6 +245,15 @@ export async function developIdea(options: {
     }
   }
 
+  if (fallbackIdea) {
+    return {
+      idea: fallbackIdea,
+      ledger: [...ledger.values()],
+      refinementHistory,
+      restarts: maxRestarts,
+      refinements: totalRefinements,
+    };
+  }
   throw new Error(
     `No idea passed review after ${maxRestarts + 1} bounded candidate attempts.`,
   );
