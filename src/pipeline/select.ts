@@ -160,7 +160,7 @@ function compareCandidates(left: ScoredPaper, right: ScoredPaper): number {
   return (
     right.score.total - left.score.total ||
     right.paper.announcedOn.localeCompare(left.paper.announcedOn) ||
-    right.paper.updatedAt.localeCompare(left.paper.updatedAt) ||
+    (right.paper.updatedAt ?? "").localeCompare(left.paper.updatedAt ?? "") ||
     left.paper.baseArxivId.localeCompare(right.paper.baseArxivId) ||
     left.score.domainId.localeCompare(right.score.domainId)
   );
@@ -183,7 +183,7 @@ export function preRankPapers(
       !current ||
       (paper.version ?? 1) > (current.version ?? 1) ||
       ((paper.version ?? 1) === (current.version ?? 1) &&
-        paper.updatedAt > current.updatedAt)
+        (paper.updatedAt ?? "") > (current.updatedAt ?? ""))
     ) {
       uniquePapers.set(paper.baseArxivId, paper);
     }

@@ -8,6 +8,7 @@
     <item>
       <title>Vision-Language-Action Models for Mobile Manipulation</title>
       <link>https://arxiv.org/abs/2608.04321v1</link>
+      <pubDate>Tue, 04 Aug 2026 00:00:00 -0400</pubDate>
       <description><![CDATA[
         We present a <b>robot policy</b> that maps visual and language observations to actions.
       ]]></description>
@@ -15,6 +16,15 @@
       <category>cs.RO</category>
       <category>cs.AI</category>
       <arxiv:announce_type>new</arxiv:announce_type>
+    </item>
+    <item>
+      <title>Updated Agent Paper Must Not Masquerade as New</title>
+      <link>https://arxiv.org/abs/2501.00001v3</link>
+      <pubDate>Tue, 04 Aug 2026 00:00:00 -0400</pubDate>
+      <description>arXiv:2501.00001v3 Announce Type: replace Abstract: This is an updated paper.</description>
+      <dc:creator>Old Author</dc:creator>
+      <category>cs.AI</category>
+      <arxiv:announce_type>replace</arxiv:announce_type>
     </item>
   </channel>
 </rss>

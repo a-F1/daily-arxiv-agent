@@ -15,6 +15,12 @@ type UnknownRecord = Record<string, unknown>;
 export interface ParseArxivOptions {
   /** ISO calendar date assigned when the upstream format has no announcement date. */
   announcedOn?: string;
+  sourceUrl?: string;
+}
+
+export interface ArxivReleaseBatch {
+  announcementDate: string;
+  papers: ArxivPaper[];
 }
 
 export interface ArxivClientOptions {
@@ -160,15 +166,15 @@ function rssAuthors(item: UnknownRecord): Author[] {
 }
 
 /** Parse an official arXiv RSS document without performing network I/O. */
-export function parseArxivRss(
+export function parseArxivRssBatch(
   xml: string,
   options: ParseArxivOptions = {},
-): ArxivPaper[] {
+): ArxivReleaseBatch {
   const document = record(parser.parse(xml));
   const channel = record(record(document["rss"])["channel"]);
   const feedDate = options.announcedOn ?? calendarDate(channel["pubDate"]);
 
-  return arrayify(channel["item"]).map((rawItem) => {
+  const papers = arrayify(channel["item"]).map((rawItem) => {
     const item = record(rawItem);
     const link = text(item["link"]);
     const id = parseArxivId(text(item["identifier"]) || link);
@@ -177,14 +183,20 @@ export function parseArxivRss(
       ...text(item["subject"]).split(/\s*,\s*|\s+/).filter(Boolean),
     ]);
     const primaryCategory = categories[0] ?? "unknown";
-    const published = isoDateTime(
-      item["pubDate"],
-      `${feedDate}T00:00:00.000Z`,
-    );
+    const releaseDate = calendarDate(item["pubDate"], feedDate);
     const description = decodeHtml(text(item["description"]));
+    const announcementType =
+      optionalText(item["announce_type"]) ??
+      description.match(/Announce Type:\s*([a-z-]+)/i)?.[1]?.toLowerCase() ??
+      "unknown";
     const abstract =
       description.replace(/^arXiv:\S+\s+Announce Type:\s*\S+\s*/i, "") ||
       "Abstract unavailable in RSS feed";
+    const releaseSourceUrl =
+      options.sourceUrl ??
+      optionalText(record(channel["atom:link"])["@_href"]) ??
+      optionalText(channel["link"]) ??
+      `${ARXIV_RSS_URL}/${primaryCategory}`;
 
     return ArxivPaperSchema.parse({
       ...id,
@@ -193,14 +205,38 @@ export function parseArxivRss(
       authors: rssAuthors(item),
       categories,
       primaryCategory,
-      submittedAt: published,
-      updatedAt: published,
-      announcedOn: feedDate,
+      announcedOn: releaseDate,
+      releaseDate,
+      announcementType,
+      releaseSourceUrl,
       absUrl: `https://arxiv.org/abs/${id.arxivId}`,
       pdfUrl: `https://arxiv.org/pdf/${id.arxivId}`,
       source: "arxiv-rss",
     });
   });
+  return { announcementDate: feedDate, papers };
+}
+
+/** Parse papers from one official daily RSS announcement batch. */
+export function parseArxivRss(
+  xml: string,
+  options: ParseArxivOptions = {},
+): ArxivPaper[] {
+  return parseArxivRssBatch(xml, options).papers;
+}
+
+const RELEASE_ANNOUNCEMENT_TYPES = new Set(["new", "cross"]);
+
+/** Keep only first-release announcements from the requested Eastern-time batch. */
+export function filterArxivReleaseBatch(
+  papers: readonly ArxivPaper[],
+  reportDate: string,
+): ArxivPaper[] {
+  return papers.filter(
+    (paper) =>
+      paper.releaseDate === reportDate &&
+      RELEASE_ANNOUNCEMENT_TYPES.has(paper.announcementType),
+  );
 }
 
 function atomAuthors(value: unknown): Author[] {
@@ -257,6 +293,9 @@ export function parseArxivApi(
       submittedAt,
       updatedAt,
       announcedOn,
+      releaseDate: announcedOn,
+      announcementType: "unknown",
+      releaseSourceUrl: alternate ?? `https://arxiv.org/abs/${id.arxivId}`,
       absUrl: alternate ?? `https://arxiv.org/abs/${id.arxivId}`,
       pdfUrl: pdf ?? `https://arxiv.org/pdf/${id.arxivId}`,
       doi: optionalText(entry["doi"]),
@@ -279,7 +318,7 @@ export function dedupeArxivPapers(papers: readonly ArxivPaper[]): ArxivPaper[] {
         paper.source === "arxiv-api" &&
         current.source !== "arxiv-api") ||
       ((paper.version ?? 1) === (current.version ?? 1) &&
-        paper.updatedAt > current.updatedAt);
+        (paper.updatedAt ?? "") > (current.updatedAt ?? ""));
     if (shouldReplace) byId.set(paper.baseArxivId, paper);
   }
   return [...byId.values()].sort(
@@ -369,7 +408,16 @@ export class ArxivClient {
     categories: readonly string[],
     options: ParseArxivOptions = {},
   ): Promise<ArxivPaper[]> {
-    if (categories.length === 0) return [];
+    return (await this.fetchRssBatch(categories, options)).papers;
+  }
+
+  async fetchRssBatch(
+    categories: readonly string[],
+    options: ParseArxivOptions = {},
+  ): Promise<ArxivReleaseBatch> {
+    if (categories.length === 0) {
+      throw new Error("At least one arXiv RSS category is required.");
+    }
     await this.#throttle();
     const safeCategories = unique([...categories]).map((category) => {
       if (!/^[a-z-]+(?:\.[A-Z]{2})?$/i.test(category)) {
@@ -377,13 +425,17 @@ export class ArxivClient {
       }
       return encodeURIComponent(category);
     });
+    const sourceUrl = `${ARXIV_RSS_URL}/${safeCategories.join("+")}`;
     const response = await checkedFetch(
       this.#fetch,
-      `${ARXIV_RSS_URL}/${safeCategories.join("+")}`,
+      sourceUrl,
       { headers: { "User-Agent": this.#userAgent, Accept: "application/rss+xml" } },
       this.#timeout,
     );
-    return parseArxivRss(await response.text(), options);
+    return parseArxivRssBatch(await response.text(), {
+      ...options,
+      sourceUrl,
+    });
   }
 }
 

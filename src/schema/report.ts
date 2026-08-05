@@ -53,9 +53,18 @@ export const ArxivPaperSchema = z
     authors: z.array(AuthorSchema).min(1),
     categories: z.array(NonEmptyString).min(1),
     primaryCategory: NonEmptyString,
-    submittedAt: IsoDateTime,
-    updatedAt: IsoDateTime,
+    submittedAt: IsoDateTime.optional(),
+    updatedAt: IsoDateTime.optional(),
     announcedOn: IsoDate,
+    releaseDate: IsoDate,
+    announcementType: z.enum([
+      "new",
+      "cross",
+      "replace",
+      "replace-cross",
+      "unknown",
+    ]),
+    releaseSourceUrl: Url,
     absUrl: Url,
     pdfUrl: Url,
     doi: NonEmptyString.optional(),
@@ -253,11 +262,30 @@ export const DomainResearchSchema = z
   .strict();
 export type DomainResearch = z.infer<typeof DomainResearchSchema>;
 
+export const SelectionPolicySchema = z
+  .object({
+    source: z.literal("arxiv-rss"),
+    timeZone: z.literal("America/New_York"),
+    dateField: z.literal("item.pubDate"),
+    includedAnnouncementTypes: z
+      .array(z.enum(["new", "cross"]))
+      .min(1),
+    excludedAnnouncementTypes: z.array(
+      z.enum(["replace", "replace-cross", "unknown"]),
+    ),
+    strictSameDay: z.literal(true),
+    maxPerDomain: z.number().int().positive(),
+  })
+  .strict();
+export type SelectionPolicy = z.infer<typeof SelectionPolicySchema>;
+
 export const DailyReportSchema = z
   .object({
     schemaVersion: z.literal("1.0"),
     reportDate: IsoDate,
     generatedAt: IsoDateTime,
+    releaseStatus: z.enum(["complete", "partial", "no-release"]).default("complete"),
+    selectionPolicy: SelectionPolicySchema.optional(),
     domains: z.array(DomainSchema).min(1),
     papers: z.array(ReportPaperSchema),
     domainResearch: z.array(DomainResearchSchema),

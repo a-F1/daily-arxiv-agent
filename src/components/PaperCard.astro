@@ -23,6 +23,15 @@ const summary = paper.summaryZh || paper.summary || "暂无摘要。";
     <div class="paper-meta">
       <span class="domain-tag">{paper.domain}</span>
       {paper.id && <span>{paper.id}</span>}
+      {paper.releaseDate && (
+        <span>
+          arXiv release date：
+          {paper.releaseSourceUrl ? (
+            <a href={paper.releaseSourceUrl} target="_blank" rel="noreferrer">{paper.releaseDate}</a>
+          ) : paper.releaseDate}
+          {paper.announcementType ? ` · ${paper.announcementType}` : ""}
+        </span>
+      )}
     </div>
     <h2 data-pagefind-meta="title">{displayTitle}</h2>
     {paper.titleZh && <p class="original-title" lang="en">{paper.title}</p>}

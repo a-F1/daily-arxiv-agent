@@ -24,6 +24,9 @@ function paper(
     submittedAt: "2026-08-04T12:00:00.000Z",
     updatedAt: "2026-08-04T12:00:00.000Z",
     announcedOn: "2026-08-04",
+    releaseDate: "2026-08-04",
+    announcementType: "new",
+    releaseSourceUrl: "https://rss.arxiv.org/rss/cs.AI",
     absUrl: `https://arxiv.org/abs/${id}`,
     pdfUrl: `https://arxiv.org/pdf/${id}`,
     source: "arxiv-api",
@@ -103,5 +106,22 @@ describe("deterministic selection", () => {
     expect(selected.filter(({ score }) => score.domainId === "agent")).toHaveLength(
       3,
     );
+  });
+
+  it("keeps the actual count when a domain has fewer than three papers", () => {
+    const selected = selectPapers(
+      [
+        paper(
+          "2608.00001",
+          "Tool-Using Agent",
+          "An agent for planning, memory, and tool use.",
+        ),
+      ],
+      DOMAINS,
+      { asOfDate: "2026-08-04" },
+    );
+
+    expect(selected).toHaveLength(1);
+    expect(selected[0]?.score.domainId).toBe("agent");
   });
 });

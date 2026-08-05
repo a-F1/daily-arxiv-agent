@@ -4,6 +4,7 @@ import {
   compressPaperText,
   dedupeArxivPapers,
   downloadPdf,
+  filterArxivReleaseBatch,
   parseArxivApi,
   parseArxivRss,
 } from "../src/sources/arxiv.js";
@@ -42,6 +43,8 @@ describe("arXiv parsers", () => {
       primaryCategory: "cs.AI",
       categories: ["cs.AI", "cs.CL"],
       announcedOn: "2026-08-04",
+      releaseDate: "2026-08-04",
+      announcementType: "unknown",
       source: "arxiv-api",
     });
     expect(papers[0]?.authors[0]).toEqual({
@@ -53,9 +56,12 @@ describe("arXiv parsers", () => {
   it("normalizes RSS and derives the New York announcement date", async () => {
     const papers = parseArxivRss(await fixture("arxiv-rss.xml"));
 
+    expect(papers).toHaveLength(2);
     expect(papers[0]).toMatchObject({
       arxivId: "2608.04321v1",
       announcedOn: "2026-08-04",
+      releaseDate: "2026-08-04",
+      announcementType: "new",
       categories: ["cs.RO", "cs.AI"],
       source: "arxiv-rss",
     });
@@ -66,6 +72,20 @@ describe("arXiv parsers", () => {
       "Grace Hopper",
       "Katherine Johnson",
     ]);
+  });
+
+  it("strictly keeps same-day new releases and excludes updates", async () => {
+    const papers = parseArxivRss(await fixture("arxiv-rss.xml"));
+    const released = filterArxivReleaseBatch(papers, "2026-08-04");
+
+    expect(released.map((paper) => paper.baseArxivId)).toEqual(["2608.04321"]);
+    expect(released.every((paper) => paper.releaseDate === "2026-08-04")).toBe(true);
+    expect(released.every((paper) => paper.announcementType === "new")).toBe(true);
+    expect(filterArxivReleaseBatch(papers, "2026-08-05")).toEqual([]);
+  });
+
+  it("returns an honest empty batch on weekends or no-release days", () => {
+    expect(filterArxivReleaseBatch([], "2026-08-08")).toEqual([]);
   });
 
   it("deduplicates by base id and prefers the latest version", async () => {

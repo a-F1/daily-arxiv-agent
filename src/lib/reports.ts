@@ -12,6 +12,9 @@ export type Paper = {
   domain: string;
   url?: string;
   pdfUrl?: string;
+  releaseDate?: string;
+  announcementType?: string;
+  releaseSourceUrl?: string;
   summary: string;
   summaryZh?: string;
   whyItMatters?: string;
@@ -28,6 +31,9 @@ export type Report = {
   query?: string;
   papers: Paper[];
   domainResearch: DomainResearch[];
+  releaseStatus: "complete" | "partial" | "no-release";
+  selectionPolicy?: string;
+  warnings: string[];
 };
 
 export type DomainResearch = {
@@ -37,6 +43,12 @@ export type DomainResearch = {
   debate: string[];
   references: Reference[];
   rounds: number;
+  title: string;
+  hypothesis: string;
+  method: string[];
+  evaluation: string[];
+  resources: string[];
+  contribution: string;
 };
 
 const files = import.meta.glob<Record<string, unknown>>("/data/reports/*.json", {
@@ -140,6 +152,9 @@ function paper(value: unknown, index: number, domainNames: Map<string, string>):
       text(source.domain, text(source.category, text(source.primaryCategory, texts(source.categories)[0] ?? "其他"))),
     url: text(source.url, text(source.absUrl, text(source.arxiv_url))) || undefined,
     pdfUrl: text(source.pdfUrl, text(source.pdf_url)) || undefined,
+    releaseDate: text(source.releaseDate, text(source.announcedOn)) || undefined,
+    announcementType: text(source.announcementType) || undefined,
+    releaseSourceUrl: text(source.releaseSourceUrl) || undefined,
     summary: summaryParts.join(" ") || text(source.summary, text(source.abstract)),
     summaryZh:
       text(source.summaryZh, text(source.summary_zh, text(analysis.summary))) || undefined,
@@ -155,7 +170,7 @@ function paper(value: unknown, index: number, domainNames: Map<string, string>):
   };
 }
 
-function normalize(path: string, value: unknown): Report {
+export function normalizeReport(path: string, value: unknown): Report {
   const report = object(value);
   const fromFilename = path.split("/").pop()?.replace(/\.json$/, "") ?? "";
   const domainNames = new Map(
@@ -181,6 +196,14 @@ function normalize(path: string, value: unknown): Report {
     const domainId = text(item.domainId);
     return {
       domain: domainNames.get(domainId) ?? domainId,
+      title: text(idea.title),
+      hypothesis: text(idea.hypothesis),
+      method: texts(idea.method),
+      evaluation: texts(idea.evaluation),
+      resources: texts(idea.resources).length
+        ? texts(idea.resources)
+        : [text(idea.resourceAssessment), text(idea.trainingResources)].filter(Boolean),
+      contribution: text(idea.expectedContribution),
       idea: [
         text(idea.title),
         text(idea.hypothesis),
@@ -218,11 +241,19 @@ function normalize(path: string, value: unknown): Report {
     query: text(report.query, text(object(report.provenance).query)) || undefined,
     papers: rawPapers.map((value, index) => paper(value, index, domainNames)),
     domainResearch,
+    releaseStatus:
+      report.releaseStatus === "no-release" || report.releaseStatus === "partial"
+        ? report.releaseStatus
+        : "complete",
+    selectionPolicy: Object.keys(object(report.selectionPolicy)).length
+      ? "Official arXiv RSS item.pubDate in America/New_York; include new/cross announcements only; exclude replace/replace-cross; never backfill from older dates."
+      : undefined,
+    warnings: texts(report.warnings),
   };
 }
 
 export const reports = Object.entries(files)
-  .map(([path, value]) => normalize(path, value))
+  .map(([path, value]) => normalizeReport(path, value))
   .filter((report) => /^\d{4}-\d{2}-\d{2}$/.test(report.date))
   .sort((a, b) => b.date.localeCompare(a.date));
 

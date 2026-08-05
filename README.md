@@ -28,8 +28,19 @@ Pagefind 只在生产构建后生成。开发服务器中搜索对话框会显�
 `src/schema/report.ts` 的 Zod schema 严格校验。报告包含三个领域、每篇论文的
 motivation / method / experiment setup / results / training resources，以及每个领域
 独立的可行 idea、refine 历史、3–5 轮 Claude/OpenAI debate 和完整引用 ledger。
+最终 idea 会在首页最新简报区和报告页论文列表之前展示，可展开查看 hypothesis、
+method、evaluation、resources、refinement、debate 与 references。
 
-仓库没有报告数据时仍能完成构建，并显示空状态。
+报告日期严格表示 arXiv 的 **announcement/release batch date**，以
+`America/New_York` 为时区，并以官方 RSS 每个 item 的 `pubDate` 为证据。
+只纳入 `announce_type=new`（首次发布）与 `cross`（同批次跨分类发布）；
+`replace`、`replace-cross` 和未知类型一律排除。API `submittedDate`、版本
+`updated` 时间和抓取时间都不能替代 release date。每篇论文保存
+`releaseDate`、`announcementType` 和 `releaseSourceUrl`，报告保存完整
+`selectionPolicy`。某领域不足三篇时保留实际数量并记录缺口，不跨日回填。
+
+仓库没有报告数据时仍能完成构建。周末、假日或官方空批次会快速生成
+`releaseStatus=no-release` 的零论文报告且不调用模型。
 
 ## 自动化
 

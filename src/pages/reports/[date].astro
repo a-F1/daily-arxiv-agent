@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import PaperCard from "../../components/PaperCard.astro";
+import IdeaCard from "../../components/IdeaCard.astro";
 import { formatDate, reports, type Report } from "../../lib/reports";
 
 export function getStaticPaths() {
@@ -36,16 +37,31 @@ const generated = report.generatedAt
         <span class="domain-tag">{report.papers.length} 篇精选</span>
       </div>
       <div class="report-provenance" aria-label="报告来源信息">
+        <span>arXiv release date：{report.date}</span>
         {generated && <span>生成于 {generated}</span>}
         {report.model && <span>模型 {report.model}</span>}
         {report.query && <span>检索 {report.query}</span>}
         <span>来源 arXiv</span>
       </div>
+      {report.selectionPolicy && <p class="release-policy">抓取规则：{report.selectionPolicy}</p>}
+      {report.warnings.length > 0 && (
+        <ul class="report-warnings">{report.warnings.map((warning) => <li>{warning}</li>)}</ul>
+      )}
     </div>
   </header>
 
   <div class="shell report-content">
     <div class="paper-list">
+      {report.domainResearch.length > 0 && (
+        <section id="research-ideas" class="report-ideas" aria-labelledby="research-ideas-heading">
+          <p class="eyebrow">FINAL RESEARCH IDEAS</p>
+          <h2 id="research-ideas-heading">三个领域的最终可行 Idea</h2>
+          <p>先看可执行研究方向，再按需阅读支撑论文。每张卡片可展开查看完整方案。</p>
+          <div class="idea-list">
+            {report.domainResearch.map((research) => <IdeaCard research={research} expanded />)}
+          </div>
+        </section>
+      )}
       {report.papers.map((paper, index) => (
         <div id={`paper-${index + 1}`}>
           <PaperCard paper={paper} index={index} expanded />
@@ -104,49 +120,15 @@ const generated = report.generatedAt
       ))}
       {report.papers.length === 0 && (
         <div class="empty-state">
-          <h2>本期暂无入选论文</h2>
-          <p>自动筛选没有找到满足条件的论文。</p>
+          <h2>{report.releaseStatus === "no-release" ? "本日 arXiv 无新发布" : "本期暂无同日入选论文"}</h2>
+          <p>系统不会用旧论文回填；请查看上方的 release date 与严格抓取规则。</p>
         </div>
       )}
-      {report.domainResearch.map((research) => (
-        <section class="analysis-block" data-pagefind-body>
-          <h2>{research.domain} · 可行研究 Idea</h2>
-          <p class="eyebrow">{research.rounds} 轮 Claude / OpenAI debate</p>
-          <div class="analysis-grid">
-            <div class="analysis-panel">
-              <b>最终方案与可行性</b>
-              <ul>{research.idea.map((item) => <li>{item}</li>)}</ul>
-            </div>
-            <div class="analysis-panel">
-              <b>Refine 记录</b>
-              <ul>{research.refinements.map((item) => <li>{item}</li>)}</ul>
-            </div>
-            <div class="analysis-panel">
-              <b>模型 Debate</b>
-              <ul>{research.debate.map((item) => <li>{item}</li>)}</ul>
-            </div>
-          </div>
-          {research.references.length > 0 && (
-            <div class="references">
-              <b>所有轮次参考论文</b>
-              <ul>
-                {research.references.map((reference) => (
-                  <li>
-                    {reference.url ? (
-                      <a href={reference.url} target="_blank" rel="noreferrer">{reference.title}</a>
-                    ) : reference.title}
-                    {reference.authors?.length ? ` — ${reference.authors.join(", ")}` : ""}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-      ))}
     </div>
 
     <aside class="report-nav" aria-label="本期论文目录">
       <b>本期目录</b>
+      {report.domainResearch.length > 0 && <a href="#research-ideas">00 · 三个最终 Idea</a>}
       {report.papers.map((paper, index) => (
         <a href={`#paper-${index + 1}`}>{String(index + 1).padStart(2, "0")} · {paper.titleZh || paper.title}</a>
       ))}

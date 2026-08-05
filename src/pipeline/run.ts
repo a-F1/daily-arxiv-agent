@@ -19,6 +19,7 @@ import {
   type DomainResearch,
   type PaperSummary,
   type ResearchIdea,
+  type SelectionPolicy,
   ResearchIdeaSchema,
   type ScoredPaper,
 } from "../schema/report.js";
@@ -28,6 +29,7 @@ import {
   downloadPdf,
   extractPdfText,
   compressPaperText,
+  filterArxivReleaseBatch,
 } from "../sources/arxiv.js";
 import { OpenAlexClient } from "../sources/openalex.js";
 import {
@@ -64,7 +66,16 @@ interface DailyCheckpoint {
   updatedAt: string;
 }
 
-const PIPELINE_VERSION = "daily-research-v2";
+const PIPELINE_VERSION = "daily-research-v3-strict-release";
+const SELECTION_POLICY: SelectionPolicy = {
+  source: "arxiv-rss",
+  timeZone: "America/New_York",
+  dateField: "item.pubDate",
+  includedAnnouncementTypes: ["new", "cross"],
+  excludedAnnouncementTypes: ["replace", "replace-cross", "unknown"],
+  strictSameDay: true,
+  maxPerDomain: 3,
+};
 
 export interface CheckpointStore {
   load(date: string): Promise<DailyCheckpoint | undefined>;
@@ -114,6 +125,8 @@ export interface DailyRunOptions {
   cwd?: string;
   configuredModels?: FlagshipModelConfig;
   resolvedModels?: ResolvedModels;
+  releaseStatus?: "complete" | "partial";
+  selectionPolicy?: SelectionPolicy;
   checkpointStore?: CheckpointStore;
   now?: () => Date;
 }
@@ -432,6 +445,8 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     schemaVersion: "1.0",
     reportDate: options.date,
     generatedAt: now().toISOString(),
+    releaseStatus: options.releaseStatus ?? "complete",
+    selectionPolicy: options.selectionPolicy ?? SELECTION_POLICY,
     domains: options.domains,
     papers: reportPapers,
     domainResearch,
@@ -442,6 +457,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         retrievedAt: now().toISOString(),
         inputHash: hash,
         notes: [
+          `Strict arXiv release batch ${options.date} (America/New_York); item.pubDate must equal reportDate; include new/cross; exclude replace/replace-cross`,
           `Models: summary=${models.summary.id}; idea=${models.idea.id}; debate Claude=${models.claude.id}; debate OpenAI=${models.openai.id}`,
           `Usage: ${budget.snapshot().runs} runs, ${budget.snapshot().totalTokens} tokens`,
           `Pipeline: ${PIPELINE_VERSION}; prompts: ${PROMPT_VERSION}`,
@@ -483,6 +499,62 @@ async function sleep(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+async function writeReport(path: string, report: DailyReport): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  await writeFile(temporary, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await rename(temporary, path);
+  console.log(`Wrote ${path}`);
+}
+
+function releaseCoverage(
+  selected: readonly ScoredPaper[],
+): { status: "complete" | "partial"; warnings: string[] } {
+  const counts = new Map<DomainId, number>();
+  for (const item of selected) {
+    counts.set(item.score.domainId, (counts.get(item.score.domainId) ?? 0) + 1);
+  }
+  const warnings = DOMAINS.flatMap((domain) => {
+    const count = counts.get(domain.id) ?? 0;
+    return count < SELECTION_POLICY.maxPerDomain
+      ? [`${domain.name}: selected ${count}/${SELECTION_POLICY.maxPerDomain} strict same-day releases; deficit ${SELECTION_POLICY.maxPerDomain - count}.`]
+      : [];
+  });
+  return { status: warnings.length > 0 ? "partial" : "complete", warnings };
+}
+
+function emptyReleaseReport(
+  date: string,
+  releaseCount: number,
+  generatedAt: string,
+): DailyReport {
+  const noRelease = releaseCount === 0;
+  return DailyReportSchema.parse({
+    schemaVersion: "1.0",
+    reportDate: date,
+    generatedAt,
+    releaseStatus: noRelease ? "no-release" : "partial",
+    selectionPolicy: SELECTION_POLICY,
+    domains: DOMAINS,
+    papers: [],
+    domainResearch: [],
+    provenance: [
+      {
+        stage: "ingestion",
+        source: "arXiv RSS",
+        retrievedAt: generatedAt,
+        notes: [
+          `Strict arXiv release batch ${date} (America/New_York); item.pubDate must equal reportDate; include new/cross; exclude replace/replace-cross`,
+          `Official same-day release announcements found: ${releaseCount}`,
+        ],
+      },
+    ],
+    warnings: noRelease
+      ? [`arXiv published no new/cross release announcements for ${date}.`]
+      : [`No same-day releases met the configured domain relevance threshold for ${date}.`],
+  });
+}
+
 export async function runCli(): Promise<void> {
   const cwd = process.cwd();
   const requestedDate = argument("--date") ?? (process.env.REPORT_DATE || undefined);
@@ -496,23 +568,26 @@ export async function runCli(): Promise<void> {
       "daily-arxiv-agent/0.1 (+https://github.com/a-F1/daily-arxiv-agent)",
   });
   const categories = [...new Set(DOMAINS.flatMap((domain) => domain.categories))];
-  const fetched = dedupeArxivPapers(await arxiv.fetchRss(categories));
-  const date =
-    requestedDate ??
-    fetched.map((paper) => paper.announcedOn).sort().at(-1);
+  const batch = await arxiv.fetchRssBatch(categories);
+  if (requestedDate && requestedDate !== batch.announcementDate) {
+    throw new Error(
+      `Official RSS currently exposes the ${batch.announcementDate} announcement batch, not requested ${requestedDate}; refusing to infer a historical release date.`,
+    );
+  }
+  const fetched = dedupeArxivPapers(batch.papers);
+  const date = requestedDate ?? batch.announcementDate;
   if (!date) {
     console.log("No arXiv announcement is currently available.");
     return;
   }
-  const papers = fetched.filter((paper) => paper.announcedOn === date);
-  if (papers.length === 0) {
-    console.log(`No arXiv papers found for ${date}.`);
-    return;
-  }
-
   const outputPath = join(cwd, "data", "reports", `${date}.json`);
   if (await exists(outputPath)) {
     console.log(`Report ${date} already exists; nothing to do.`);
+    return;
+  }
+  const papers = filterArxivReleaseBatch(fetched, date);
+  if (papers.length === 0) {
+    await writeReport(outputPath, emptyReleaseReport(date, 0, new Date().toISOString()));
     return;
   }
   const selected = selectPapers(papers, DOMAINS, {
@@ -521,9 +596,13 @@ export async function runCli(): Promise<void> {
     maxPerDomain: 3,
   });
   if (selected.length === 0) {
-    console.log(`No papers met the relevance threshold for ${date}.`);
+    await writeReport(
+      outputPath,
+      emptyReleaseReport(date, papers.length, new Date().toISOString()),
+    );
     return;
   }
+  const coverage = releaseCoverage(selected);
 
   const rawApiKey = process.env.CURSOR_API_KEY;
   if (!rawApiKey) {
@@ -561,6 +640,8 @@ export async function runCli(): Promise<void> {
     paperTexts,
     apiKey,
     cwd,
+    releaseStatus: coverage.status,
+    selectionPolicy: SELECTION_POLICY,
     searchPriorArt: async (query) =>
       openAlex.searchPriorArt({
         title: query,
@@ -568,11 +649,11 @@ export async function runCli(): Promise<void> {
         maxResults: 10,
       }),
   });
-  await mkdir(dirname(outputPath), { recursive: true });
-  const temporary = `${outputPath}.${randomUUID()}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  await rename(temporary, outputPath);
-  console.log(`Wrote ${outputPath}`);
+  const enrichedReport = DailyReportSchema.parse({
+    ...report,
+    warnings: [...report.warnings, ...coverage.warnings],
+  });
+  await writeReport(outputPath, enrichedReport);
 }
 
 const isEntryPoint =
