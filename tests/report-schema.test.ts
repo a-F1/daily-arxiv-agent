@@ -71,19 +71,28 @@ describe("simplified Chinese narrative schemas", () => {
   it("requires Chinese for summary and idea narrative fields", () => {
     const summary = {
       oneLiner: "该论文提出一种可复现的新方法。",
-      motivation: "现有系统的推理成本过高。",
-      method: "该方法使用分层缓存减少重复计算。",
-      experimentSetup: "实验覆盖三个数据集和四个基线。",
+      motivation: ["现有系统的推理成本过高。"],
+      method: ["该方法使用分层缓存减少重复计算。"],
+      experimentSetup: ["实验覆盖三个数据集和四个基线。"],
       results: ["准确率提高五个百分点。"],
-      trainingResources: "论文未披露训练资源。",
+      trainingResources: ["论文未披露训练资源。"],
       limitations: ["尚未验证更大规模的数据集。"],
       significance: "该结果为低成本部署提供依据。",
     };
     expect(ChinesePaperSummarySchema.safeParse(summary).success).toBe(true);
+    for (const field of [
+      "motivation",
+      "method",
+      "experimentSetup",
+      "results",
+      "trainingResources",
+    ] as const) {
+      expect(Array.isArray(summary[field])).toBe(true);
+    }
     expect(
       ChinesePaperSummarySchema.safeParse({
         ...summary,
-        motivation: "Existing systems are too expensive to run.",
+        motivation: ["Existing systems are too expensive to run."],
       }).success,
     ).toBe(false);
 

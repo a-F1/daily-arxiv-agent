@@ -2,27 +2,21 @@ import { createHash, randomUUID } from "node:crypto";
 import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import type { ModelSelection } from "@cursor/sdk";
 import pLimit from "p-limit";
 import { AgentClient, RunBudget, type UsageSnapshot } from "../agents/client.js";
-import { PROMPT_VERSION, reviseRejectedIdeaPrompt } from "../agents/prompts.js";
-import {
-  resolveFlagshipModels,
-  type FlagshipModelConfig,
-  type ResolvedModels,
-} from "../agents/models.js";
+import { PROMPT_VERSION } from "../agents/prompts.js";
+import { resolveSummaryModel } from "../agents/models.js";
 import { DOMAINS } from "../domains.js";
 import {
   DailyReportSchema,
   type DailyReport,
   type Domain,
   type DomainId,
-  type DomainResearch,
   type ExclusionSummary,
   type ExcludedTopicReasonCode,
   type ArxivPaper,
   type PaperSummary,
-  type ResearchIdea,
-  ChineseResearchIdeaSchema,
   type SelectionPolicy,
   type ScoredPaper,
 } from "../schema/report.js";
@@ -34,18 +28,6 @@ import {
   compressPaperText,
   filterArxivReleaseBatch,
 } from "../sources/arxiv.js";
-import { OpenAlexClient } from "../sources/openalex.js";
-import {
-  debateIdea,
-  type DebateCheckpoint,
-  type DebateOutcome,
-} from "./debate.js";
-import {
-  developIdea,
-  type IdeaCheckpoint,
-  type IdeaResult,
-  type PriorArtSearch,
-} from "./ideas.js";
 import {
   classifyExcludedTopic,
   selectPapers,
@@ -54,11 +36,6 @@ import { summarizePapers } from "./summarize.js";
 
 interface DomainCheckpoint {
   summaries: Record<string, PaperSummary>;
-  idea?: IdeaResult;
-  ideaProgress?: IdeaCheckpoint;
-  debate?: DebateOutcome;
-  debateProgress?: DebateCheckpoint;
-  debateAttempts?: number;
 }
 
 interface DailyCheckpoint {
@@ -72,7 +49,7 @@ interface DailyCheckpoint {
   updatedAt: string;
 }
 
-const PIPELINE_VERSION = "daily-research-v4-hard-topic-exclusions";
+const PIPELINE_VERSION = "daily-paper-summary-v5-cloud-exclusions";
 const SELECTION_POLICY: SelectionPolicy = {
   source: "arxiv-rss",
   timeZone: "America/New_York",
@@ -82,7 +59,8 @@ const SELECTION_POLICY: SelectionPolicy = {
   strictSameDay: true,
   maxPerDomain: 3,
   hardExcludedTopicsEnabled: true,
-  excludedTopicPolicyVersion: "safety-security-attack-defense-v1",
+  excludedTopicPolicyVersion:
+    "safety-security-attack-defense-v1+cloud-computing-v1",
 };
 
 export interface CheckpointStore {
@@ -128,15 +106,15 @@ export interface DailyRunOptions {
   domains: readonly Domain[];
   papers: readonly ScoredPaper[];
   paperTexts?: Readonly<Record<string, string>>;
-  searchPriorArt: PriorArtSearch;
   apiKey: string;
   cwd?: string;
-  configuredModels?: FlagshipModelConfig;
-  resolvedModels?: ResolvedModels;
+  configuredSummaryModel?: string;
+  resolvedSummaryModel?: ModelSelection;
   releaseStatus?: "complete" | "partial";
   selectionPolicy?: SelectionPolicy;
   exclusionSummary?: ExclusionSummary;
   checkpointStore?: CheckpointStore;
+  client?: AgentClient;
   now?: () => Date;
 }
 
@@ -168,7 +146,7 @@ function textHashes(
 
 function inputHash(
   options: DailyRunOptions,
-  models: ResolvedModels,
+  summaryModel: ModelSelection,
   runtimeConfig: Record<string, number>,
 ): string {
   return createHash("sha256")
@@ -180,7 +158,7 @@ function inputHash(
       domains: options.domains,
       papers: options.papers,
       paperTexts: textHashes(options.paperTexts),
-      models,
+      summaryModel,
       runtimeConfig,
     }))
     .digest("hex");
@@ -194,11 +172,11 @@ function positiveIntegerEnv(name: string, fallback: number): number {
 async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
   if (!options.apiKey.trim()) throw new Error("CURSOR_API_KEY is required.");
   const now = options.now ?? (() => new Date());
-  const models =
-    options.resolvedModels ??
-    (await resolveFlagshipModels({
+  const summaryModel =
+    options.resolvedSummaryModel ??
+    (await resolveSummaryModel({
       apiKey: options.apiKey,
-      configured: options.configuredModels,
+      configured: options.configuredSummaryModel,
     }));
   const runtimeConfig = {
     modelConcurrency: positiveIntegerEnv("MODEL_CONCURRENCY", 3),
@@ -206,27 +184,20 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     summaryConcurrency: positiveIntegerEnv("SUMMARY_CONCURRENCY", 3),
     modelTimeoutMs: positiveIntegerEnv("MODEL_TIMEOUT_MS", 600_000),
     maxPaperTextChars: positiveIntegerEnv("MAX_PAPER_TEXT_CHARS", 40_000),
-    debateMinRounds: Math.max(3, positiveIntegerEnv("DEBATE_MIN_ROUNDS", 3)),
-    debateMaxRounds: Math.min(5, positiveIntegerEnv("DEBATE_MAX_ROUNDS", 3)),
   };
-  if (runtimeConfig.debateMinRounds > runtimeConfig.debateMaxRounds) {
-    throw new Error(
-      "DEBATE_MIN_ROUNDS must not exceed DEBATE_MAX_ROUNDS after enforcing the 3-5 round bounds.",
-    );
-  }
-  const hash = inputHash(options, models, runtimeConfig);
+  const hash = inputHash(options, summaryModel, runtimeConfig);
   const store =
     options.checkpointStore ??
     new FileCheckpointStore(join(options.cwd ?? process.cwd(), "data", "checkpoints"));
   const loaded = await store.load(options.date);
   const existing =
-    loaded?.version === 2 && loaded.inputHash === hash ? loaded : undefined;
+    loaded?.version === 3 && loaded.inputHash === hash ? loaded : undefined;
   if (loaded && !existing) {
     console.warn(
       JSON.stringify({
         event: "checkpoint_ignored",
         date: options.date,
-        reason: loaded.version !== 2 ? "version_changed" : "inputs_changed",
+        reason: loaded.version !== 3 ? "version_changed" : "inputs_changed",
       }),
     );
   }
@@ -236,13 +207,13 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
 
   const budget = new RunBudget(
     {
-      maxRuns: positiveIntegerEnv("MAX_DAILY_RUNS", 180),
-      maxTokens: positiveIntegerEnv("MAX_DAILY_TOKENS", 10_000_000),
+      maxRuns: positiveIntegerEnv("MAX_DAILY_RUNS", 12),
+      maxTokens: positiveIntegerEnv("MAX_DAILY_TOKENS", 2_000_000),
     },
     existing?.budget,
   );
   const state: DailyCheckpoint = existing ?? {
-    version: 2,
+    version: 3,
     date: options.date,
     inputHash: hash,
     status: "running",
@@ -258,40 +229,32 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     persistQueue = persistQueue.then(() => store.save(options.date, snapshot));
     await persistQueue;
   };
-  const client = new AgentClient({
-    apiKey: options.apiKey,
-    cwd: options.cwd ?? process.cwd(),
-    budget,
-    maxConcurrency: runtimeConfig.modelConcurrency,
-    timeoutMs: runtimeConfig.modelTimeoutMs,
-    onUsage: async () => persist(),
-  });
+  const client =
+    options.client ??
+    new AgentClient({
+      apiKey: options.apiKey,
+      cwd: options.cwd ?? process.cwd(),
+      budget,
+      maxConcurrency: runtimeConfig.modelConcurrency,
+      timeoutMs: runtimeConfig.modelTimeoutMs,
+      onUsage: persist,
+    });
 
-  interface DomainOutput {
-    research?: DomainResearch;
-    papers: DailyReport["papers"];
-    warnings: string[];
-  }
   const domainLimit = pLimit(runtimeConfig.domainConcurrency);
   const outputs = await Promise.all(
     options.domains.map((domain) =>
-      domainLimit(async (): Promise<DomainOutput> => {
+      domainLimit(async () => {
         const selected = options.papers.filter(
           (item) => item.score.domainId === domain.id,
         );
         if (selected.length === 0) {
           return {
-            papers: [],
-            warnings: [`${domain.name}: no qualifying papers`],
+            papers: [] as DailyReport["papers"],
+            warnings: [`${domain.name}：当天没有符合条件的论文。`],
           };
         }
-        const domainWarnings =
-          selected.length < domain.maxPapers
-            ? [`${domain.name}: selected ${selected.length}/${domain.maxPapers} papers`]
-            : [];
         const domainState = state.domains[domain.id] ?? { summaries: {} };
         state.domains[domain.id] = domainState;
-
         const remaining = selected
           .filter(({ paper }) => !domainState.summaries[paper.baseArxivId])
           .map(({ paper }) => {
@@ -311,145 +274,52 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         if (remaining.length > 0) {
           await summarizePapers({
             client,
-            model: models.summary,
+            model: summaryModel,
             papers: remaining,
             domainId: domain.id,
             concurrency: runtimeConfig.summaryConcurrency,
-            idempotencyPrefix: `${options.date}:${domain.id}`,
+            idempotencyPrefix: `${options.date}:${domain.id}:summary`,
             onSummary: async (summary, paper) => {
-              const paperId = String(paper.baseArxivId ?? paper.arxivId);
-              domainState.summaries[paperId] = summary;
+              domainState.summaries[String(paper.baseArxivId ?? paper.arxivId)] =
+                summary;
               await persist();
             },
           });
         }
-        const orderedSummaries = selected.map(({ paper }) => {
-          const summary = domainState.summaries[paper.baseArxivId];
-          if (!summary) throw new Error(`Missing summary for ${paper.baseArxivId}.`);
-          return summary;
+        const papers: DailyReport["papers"] = selected.map((item) => {
+          const summary = domainState.summaries[item.paper.baseArxivId];
+          if (!summary) throw new Error(`Missing summary for ${item.paper.baseArxivId}.`);
+          return {
+            paper: item.paper,
+            score: item.score,
+            summary,
+            ideas: [],
+            refinements: [],
+            references: [],
+            provenance: [
+              {
+                stage: "summarization",
+                source: "Cursor SDK",
+                retrievedAt: now().toISOString(),
+                model: summaryModel.id,
+                promptVersion: PROMPT_VERSION,
+                notes: ["仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"],
+              },
+            ],
+          };
         });
-
-        if (!domainState.idea) {
-          domainState.idea = await developIdea({
-            client,
-            model: models.idea,
-            summaries: orderedSummaries,
-            domainName: domain.name,
-            searchPriorArt: options.searchPriorArt,
-            idempotencyPrefix: `${options.date}:${domain.id}:idea`,
-            maxRestarts: 1,
-            maxReferences: 30,
-            initialCheckpoint: domainState.ideaProgress,
-            domainId: domain.id,
-            candidate: 0,
-            onCheckpoint: async (progress) => {
-              domainState.ideaProgress = progress;
-              await persist();
-            },
-          });
-          delete domainState.ideaProgress;
-          await persist();
-        }
-
-        while ((domainState.debateAttempts ?? 0) < 2) {
-          const attempt = domainState.debateAttempts ?? 0;
-          if (!domainState.debate) {
-            domainState.debate = await debateIdea({
-              client,
-              idea: domainState.idea.idea,
-              references: domainState.idea.ledger,
-              initialCheckpoint: domainState.debateProgress,
-              advocateModel: models.claude,
-              skepticModel: models.openai,
-              moderatorModel: models.claude,
-              idempotencyPrefix: `${options.date}:${domain.id}:debate:${attempt}`,
-              domainId: domain.id,
-              candidate: attempt,
-              minRounds: runtimeConfig.debateMinRounds,
-              maxRounds: runtimeConfig.debateMaxRounds,
-              onCheckpoint: async (progress) => {
-                domainState.debateProgress = structuredClone(progress);
-                await persist();
-              },
-            });
-            delete domainState.debateProgress;
-            await persist();
-          }
-          if (domainState.debate.result.approved) break;
-          if (attempt >= 1) break;
-
-          const revisedIdea: ResearchIdea = await client.promptJson({
-            prompt: reviseRejectedIdeaPrompt({
-              draft: domainState.idea.idea,
-              debate: {
-                consensus: domainState.debate.result.consensus,
-                unresolvedQuestions:
-                  domainState.debate.result.unresolvedQuestions,
-              },
-              references: domainState.idea.ledger,
-            }),
-            schema: ChineseResearchIdeaSchema,
-            model: models.idea,
-            idempotencyKey: `${options.date}:${domain.id}:targeted-revision`,
-            context: {
-              stage: "refinement",
-              domainId: domain.id,
-              candidate: attempt + 1,
-              role: "debate-feedback",
-            },
-          });
-          domainState.idea = { ...domainState.idea, idea: revisedIdea };
-          domainState.debateAttempts = attempt + 1;
-          delete domainState.debate;
-          delete domainState.debateProgress;
-          await persist();
-        }
-        if (!domainState.debate?.result.approved) {
-          throw new Error(
-            `${domain.name}: proposal did not pass debate after one targeted revision.`,
-          );
-        }
-
-        const references = domainState.idea.ledger.map(
-          (entry) => entry.reference,
-        );
-        const research: DomainResearch = {
-          domainId: domain.id,
-          idea: domainState.debate.result.finalIdea,
-          refinements: domainState.idea.refinementHistory,
-          debate: domainState.debate.result,
-          references,
-          restarts: domainState.idea.restarts,
-          debateRounds: domainState.debate.rounds,
+        return {
+          papers,
+          warnings:
+            selected.length < domain.maxPapers
+              ? [
+                  `${domain.name}：严格同日发布论文入选 ${selected.length}/${domain.maxPapers} 篇，缺少 ${domain.maxPapers - selected.length} 篇。`,
+                ]
+              : [],
         };
-        const papers: DailyReport["papers"] = selected.map((item) => ({
-          paper: item.paper,
-          score: item.score,
-          summary: domainState.summaries[item.paper.baseArxivId]!,
-          ideas: [],
-          refinements: [],
-          references: [],
-          provenance: [
-            {
-              stage: "summarization",
-              source: "Cursor SDK",
-              retrievedAt: now().toISOString(),
-              model: models.summary.id,
-              promptVersion: PROMPT_VERSION,
-              notes: [],
-            },
-          ],
-        }));
-        return { research, papers, warnings: domainWarnings };
       }),
     ),
   );
-  const domainResearch = outputs.flatMap((output) =>
-    output.research ? [output.research] : [],
-  );
-  const reportPapers = outputs.flatMap((output) => output.papers);
-  const warnings = outputs.flatMap((output) => output.warnings);
-
   const report = DailyReportSchema.parse({
     schemaVersion: "1.0",
     reportDate: options.date,
@@ -458,8 +328,8 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     selectionPolicy: options.selectionPolicy ?? SELECTION_POLICY,
     exclusionSummary: options.exclusionSummary,
     domains: options.domains,
-    papers: reportPapers,
-    domainResearch,
+    papers: outputs.flatMap((output) => output.papers),
+    domainResearch: [],
     provenance: [
       {
         stage: "ingestion",
@@ -467,15 +337,15 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         retrievedAt: now().toISOString(),
         inputHash: hash,
         notes: [
-          `严格使用 ${options.date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
-          `硬排除 safety/security/attack/defense 主题；共排除 ${options.exclusionSummary?.totalExcluded ?? 0} 篇，reason code 统计：${JSON.stringify(options.exclusionSummary?.byReason ?? {})}`,
-          `模型：摘要=${models.summary.id}；研究构想=${models.idea.id}；辩论 Claude=${models.claude.id}；辩论 OpenAI=${models.openai.id}`,
-          `用量：${budget.snapshot().runs} 次调用，${budget.snapshot().totalTokens} 个 token`,
-          `流水线版本：${PIPELINE_VERSION}；提示词版本：${PROMPT_VERSION}`,
+          `严格使用 ${options.date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross。`,
+          `评分与配额前执行 safety/security/attack/defense 与云计算主题硬排除；分类统计：${JSON.stringify(options.exclusionSummary?.byPolicy ?? { safetySecurity: 0, cloudComputing: 0 })}；reason code：${JSON.stringify(options.exclusionSummary?.byReason ?? {})}。`,
+          `仅使用摘要模型 ${summaryModel.id}，每篇论文至多一次摘要调用；不生成 research idea、refinement、prior-art 或 debate。`,
+          `用量：${budget.snapshot().runs} 次调用，${budget.snapshot().totalTokens} 个 token。`,
+          `流水线版本：${PIPELINE_VERSION}；提示词版本：${PROMPT_VERSION}。`,
         ],
       },
     ],
-    warnings,
+    warnings: outputs.flatMap((output) => output.warnings),
   });
   state.report = report;
   state.status = "complete";
@@ -539,6 +409,8 @@ export function applyHardTopicExclusions(
 ): { eligible: ArxivPaper[]; summary: ExclusionSummary } {
   const eligible: ArxivPaper[] = [];
   const byReason: Partial<Record<ExcludedTopicReasonCode, number>> = {};
+  let safetySecurity = 0;
+  let cloudComputing = 0;
   let totalExcluded = 0;
   for (const paper of papers) {
     const decision = classifyExcludedTopic(paper);
@@ -547,6 +419,31 @@ export function applyHardTopicExclusions(
       continue;
     }
     totalExcluded += 1;
+    if (
+      decision.reasonCodes.some((reason) =>
+        [
+          "CLOUD_COMPUTING_SYSTEMS",
+          "SERVERLESS_FAAS",
+          "DATACENTER_INFRASTRUCTURE",
+          "CHINESE_CLOUD_COMPUTING",
+        ].includes(reason),
+      )
+    ) {
+      cloudComputing += 1;
+    }
+    if (
+      decision.reasonCodes.some(
+        (reason) =>
+          ![
+            "CLOUD_COMPUTING_SYSTEMS",
+            "SERVERLESS_FAAS",
+            "DATACENTER_INFRASTRUCTURE",
+            "CHINESE_CLOUD_COMPUTING",
+          ].includes(reason),
+      )
+    ) {
+      safetySecurity += 1;
+    }
     console.log(JSON.stringify({
       event: "paper_hard_excluded",
       paperId: paper.baseArxivId,
@@ -557,7 +454,14 @@ export function applyHardTopicExclusions(
       byReason[reason] = (byReason[reason] ?? 0) + 1;
     }
   }
-  return { eligible, summary: { totalExcluded, byReason } };
+  return {
+    eligible,
+    summary: {
+      totalExcluded,
+      byReason,
+      byPolicy: { safetySecurity, cloudComputing },
+    },
+  };
 }
 
 function emptyReleaseReport(
@@ -567,6 +471,7 @@ function emptyReleaseReport(
   exclusionSummary: ExclusionSummary = {
     totalExcluded: 0,
     byReason: {},
+    byPolicy: { safetySecurity: 0, cloudComputing: 0 },
   },
 ): DailyReport {
   const noRelease = releaseCount === 0;
@@ -588,7 +493,7 @@ function emptyReleaseReport(
         notes: [
           `严格使用 ${date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
           `官方同日发布公告数量：${releaseCount}`,
-          `硬排除主题论文数量：${exclusionSummary.totalExcluded}；reason code 统计：${JSON.stringify(exclusionSummary.byReason)}`,
+          `评分与配额前执行安全攻防与云计算两类硬排除；分类计数：${JSON.stringify(exclusionSummary.byPolicy ?? { safetySecurity: 0, cloudComputing: 0 })}；reason code：${JSON.stringify(exclusionSummary.byReason)}`,
         ],
       },
     ],
@@ -683,7 +588,6 @@ export async function runCli(): Promise<void> {
     }
   }
 
-  const openAlex = new OpenAlexClient({ email: process.env.OPENALEX_EMAIL });
   const report = await runDailyPipeline({
     date,
     domains: DOMAINS,
@@ -694,12 +598,6 @@ export async function runCli(): Promise<void> {
     releaseStatus: coverage.status,
     selectionPolicy: SELECTION_POLICY,
     exclusionSummary: exclusions.summary,
-    searchPriorArt: async (query) =>
-      openAlex.searchPriorArt({
-        title: query,
-        beforeYear: Number(date.slice(0, 4)),
-        maxResults: 10,
-      }),
   });
   const enrichedReport = DailyReportSchema.parse({
     ...report,

@@ -142,11 +142,11 @@ export type ScoredPaper = z.infer<typeof ScoredPaperSchema>;
 export const PaperSummarySchema = z
   .object({
     oneLiner: NonEmptyString,
-    motivation: NonEmptyString,
-    method: NonEmptyString,
-    experimentSetup: NonEmptyString,
+    motivation: z.union([NonEmptyString, z.array(NonEmptyString).min(1)]),
+    method: z.union([NonEmptyString, z.array(NonEmptyString).min(1)]),
+    experimentSetup: z.union([NonEmptyString, z.array(NonEmptyString).min(1)]),
     results: z.array(NonEmptyString).min(1),
-    trainingResources: NonEmptyString,
+    trainingResources: z.union([NonEmptyString, z.array(NonEmptyString).min(1)]),
     limitations: z.array(NonEmptyString),
     significance: NonEmptyString,
   })
@@ -155,11 +155,11 @@ export type PaperSummary = z.infer<typeof PaperSummarySchema>;
 
 export const ChinesePaperSummarySchema = PaperSummarySchema.extend({
   oneLiner: SimplifiedChineseNarrativeSchema,
-  motivation: SimplifiedChineseNarrativeSchema,
-  method: SimplifiedChineseNarrativeSchema,
-  experimentSetup: SimplifiedChineseNarrativeSchema,
-  results: z.array(SimplifiedChineseNarrativeSchema).min(1),
-  trainingResources: SimplifiedChineseNarrativeSchema,
+  motivation: z.array(SimplifiedChineseNarrativeSchema).min(1).max(6),
+  method: z.array(SimplifiedChineseNarrativeSchema).min(1).max(8),
+  experimentSetup: z.array(SimplifiedChineseNarrativeSchema).min(1).max(8),
+  results: z.array(SimplifiedChineseNarrativeSchema).min(1).max(8),
+  trainingResources: z.array(SimplifiedChineseNarrativeSchema).min(1).max(6),
   limitations: z.array(SimplifiedChineseNarrativeSchema),
   significance: SimplifiedChineseNarrativeSchema,
 });
@@ -331,6 +331,10 @@ export const ExcludedTopicReasonCodeSchema = z.enum([
   "DEFENSE_MITIGATION",
   "RED_TEAM_EXPLOIT",
   "CHINESE_SECURITY_TOPIC",
+  "CLOUD_COMPUTING_SYSTEMS",
+  "SERVERLESS_FAAS",
+  "DATACENTER_INFRASTRUCTURE",
+  "CHINESE_CLOUD_COMPUTING",
 ]);
 export type ExcludedTopicReasonCode = z.infer<
   typeof ExcludedTopicReasonCodeSchema
@@ -345,6 +349,12 @@ export const ExclusionSummarySchema = z
         z.number().int().nonnegative(),
       )
       .default({}),
+    byPolicy: z
+      .object({
+        safetySecurity: z.number().int().nonnegative(),
+        cloudComputing: z.number().int().nonnegative(),
+      })
+      .optional(),
   })
   .strict();
 export type ExclusionSummary = z.infer<typeof ExclusionSummarySchema>;
@@ -378,7 +388,7 @@ export const DailyReportSchema = z
     exclusionSummary: ExclusionSummarySchema.optional(),
     domains: z.array(DomainSchema).min(1),
     papers: z.array(ReportPaperSchema),
-    domainResearch: z.array(DomainResearchSchema),
+    domainResearch: z.array(DomainResearchSchema).default([]),
     provenance: z.array(ProvenanceRecordSchema).min(1),
     warnings: z.array(NonEmptyString).default([]),
   })

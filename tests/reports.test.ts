@@ -47,14 +47,14 @@ describe("report idea visibility", () => {
     )).toBe(true);
   });
 
-  it("renders normalized ideas on both homepage and report entry point", async () => {
+  it("keeps historical ideas on report pages but not the homepage", async () => {
     const [home, report] = await Promise.all([
       readFile(new URL("../src/pages/index.astro", import.meta.url), "utf8"),
       readFile(new URL("../src/pages/reports/[date].astro", import.meta.url), "utf8"),
     ]);
 
-    expect(home).toContain("latest.domainResearch.map");
-    expect(home).toContain("IdeaCard");
+    expect(home).not.toContain("IdeaCard");
+    expect(home).not.toContain("domainResearch.map");
     expect(report).toContain('id="research-ideas"');
     expect(report).toContain("IdeaCard");
   });
@@ -76,8 +76,50 @@ describe("report idea visibility", () => {
       domainResearch: [],
     });
 
-    expect(report.selectionPolicy).toContain("评分前硬排除");
+    expect(report.selectionPolicy).toContain("评分与配额前");
     expect(report.exclusionSummary).toContain("硬排除 4 篇");
     expect(report.exclusionSummary).toContain("ATTACK_ADVERSARIAL=2");
+  });
+
+  it("normalizes legacy string summaries into five bullet sections", () => {
+    const report = normalizeReport("2026-08-04.json", {
+      reportDate: "2026-08-04",
+      papers: [
+        {
+          paper: { title: "Legacy paper", authors: ["Author"] },
+          summary: {
+            oneLiner: "Legacy summary",
+            motivation: "Legacy motivation",
+            method: "Legacy method",
+            experimentSetup: "Legacy setup",
+            results: ["Legacy result"],
+            trainingResources: "Legacy resources",
+          },
+        },
+      ],
+    });
+    expect(report.papers[0]).toMatchObject({
+      motivation: ["Legacy motivation"],
+      method: ["Legacy method"],
+      experimentSetup: ["Legacy setup"],
+      results: ["Legacy result"],
+      trainingResources: ["Legacy resources"],
+    });
+  });
+
+  it("renders the same five paper sections through the shared card", async () => {
+    const card = await readFile(
+      new URL("../src/components/PaperCard.astro", import.meta.url),
+      "utf8",
+    );
+    for (const heading of [
+      "研究动机",
+      "核心方法",
+      "实验设置",
+      "主要结果",
+      "训练 / 计算资源",
+    ]) {
+      expect(card).toContain(heading);
+    }
   });
 });

@@ -7,8 +7,8 @@ interface Props {
 }
 
 const {
-  title = "每日 arXiv 研究简报",
-  description = "用研究智能体筛选、解读和碰撞每天值得关注的 arXiv 论文。",
+  title = "每日 arXiv 论文精读",
+  description = "每天精读三个领域最多九篇当日发布的 arXiv 论文。",
 } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -33,7 +33,7 @@ const archive = `${base}archive/`;
       <div class="shell header-inner">
         <a class="brand" href={home} aria-label="每日 arXiv 首页">
           <span class="brand-mark" aria-hidden="true">A</span>
-          <span><b>每日 arXiv</b><small>研究笔记</small></span>
+          <span><b>每日 arXiv</b><small>论文精读</small></span>
         </a>
         <nav aria-label="主要导航">
           <a href={home} aria-current={Astro.url.pathname === base ? "page" : undefined}>最新</a>
@@ -49,7 +49,7 @@ const archive = `${base}archive/`;
     </main>
     <footer>
       <div class="shell footer-inner">
-        <p><b>每日 arXiv</b> · 面向研究者的每日论文观察</p>
+        <p><b>每日 arXiv</b> · 每日九篇论文精读</p>
         <p>内容由 AI 辅助生成，请以原论文为准。</p>
       </div>
     </footer>
@@ -58,7 +58,7 @@ const archive = `${base}archive/`;
       <div class="search-dialog-head">
         <div>
           <p class="eyebrow">全文检索</p>
-          <h2 id="search-title">搜索研究简报</h2>
+          <h2 id="search-title">搜索论文精读</h2>
         </div>
         <button type="button" data-search-close aria-label="关闭搜索">×</button>
       </div>

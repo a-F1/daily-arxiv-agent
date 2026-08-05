@@ -9,7 +9,7 @@ interface Props {
 
 const { paper, index, expanded = false } = Astro.props;
 const displayTitle = paper.titleZh || paper.title;
-const summary = paper.summaryZh || paper.summary || "暂无摘要。";
+const oneLiner = paper.summaryZh || paper.oneLiner || "暂无摘要。";
 const announcementLabel =
   paper.announcementType === "new"
     ? "首次发布"
@@ -42,7 +42,25 @@ const announcementLabel =
     <h2 data-pagefind-meta="title">{displayTitle}</h2>
     {paper.titleZh && <p class="original-title" lang="en">{paper.title}</p>}
     {paper.authors.length > 0 && <p class="authors">{paper.authors.join(" · ")}</p>}
-    <p class="paper-summary">{summary}</p>
+    <p class="paper-summary paper-summary--lead">{oneLiner}</p>
+    <div class="paper-deep-dive" aria-label={`${displayTitle} 的五项精读`}>
+      {[
+        ["研究动机", paper.motivation],
+        ["核心方法", paper.method],
+        ["实验设置", paper.experimentSetup],
+        ["主要结果", paper.results],
+        ["训练 / 计算资源", paper.trainingResources],
+      ].map(([heading, items]) => (
+        <section class="paper-section">
+          <h3>{heading}</h3>
+          {Array.isArray(items) && items.length > 0 ? (
+            <ul>{items.map((item) => <li>{item}</li>)}</ul>
+          ) : (
+            <p>论文未披露。</p>
+          )}
+        </section>
+      ))}
+    </div>
     {paper.whyItMatters && (
       <div class="why-note">
         <b>为什么值得关注</b>

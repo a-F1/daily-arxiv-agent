@@ -135,6 +135,10 @@ describe("deterministic selection", () => {
     ["Memory Poisoning in Multi-Agent Systems", "Injected memories corrupt decisions.", "POISONING_BACKDOOR"],
     ["Backdoor Triggers for Language Models", "Hidden triggers alter outputs.", "POISONING_BACKDOOR"],
     ["面向智能体的提示注入与越狱研究", "分析恶意提示如何改变工具调用。", "CHINESE_SECURITY_TOPIC"],
+    ["Scheduling Cloud Computing Workloads", "We optimize cloud resource scheduling.", "CLOUD_COMPUTING_SYSTEMS"],
+    ["Cold Starts in Serverless Platforms", "We optimize FaaS function placement.", "SERVERLESS_FAAS"],
+    ["Energy-Aware Datacenter Networks", "We schedule jobs across data centers.", "DATACENTER_INFRASTRUCTURE"],
+    ["面向云平台的弹性资源调度", "研究云计算工作负载的资源分配。", "CHINESE_CLOUD_COMPUTING"],
   ])("hard-excludes %s", (title, abstract, reasonCode) => {
     const decision = classifyExcludedTopic(
       paper("2608.01000", title, abstract),
@@ -174,6 +178,18 @@ describe("deterministic selection", () => {
     [
       "Reliable Object Detection Under Weather Shift",
       "The detector remains robust under rain and illumination changes.",
+    ],
+    [
+      "Point Cloud Segmentation with Sparse Transformers",
+      "We improve 3D point cloud understanding on autonomous-driving datasets.",
+    ],
+    [
+      "Training Language Models from Archived Corpora",
+      "We use a cloud storage bucket only to retrieve the public training files.",
+    ],
+    [
+      "Tool Calling with a Hosted API",
+      "Experiments invoke a cloud API as a tool; the paper studies agent planning.",
     ],
   ])("does not falsely exclude %s", (title, abstract) => {
     expect(

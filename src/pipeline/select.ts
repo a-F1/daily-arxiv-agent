@@ -8,7 +8,7 @@ import {
   type ScoredPaper,
 } from "../schema/report.js";
 
-export const SELECTION_ALGORITHM_VERSION = "pre-rank-v2-hard-topic-exclusions";
+export const SELECTION_ALGORITHM_VERSION = "pre-rank-v3-cloud-exclusions";
 
 export const EXCLUDED_TOPIC_REASON_CODES =
   ExcludedTopicReasonCodeSchema.options;
@@ -197,6 +197,60 @@ export function classifyExcludedTopic(
     ) {
       add("CHINESE_SECURITY_TOPIC", ["攻击语境"]);
     }
+  }
+
+  add(
+    "CLOUD_COMPUTING_SYSTEMS",
+    matchEvidence(combined, [
+      /\bcloud computing\b/gi,
+      /\bcloud systems?\b/gi,
+      /\bcloud infrastructure\b/gi,
+      /\bcloud platforms?\b/gi,
+      /\bcloud resource schedul(?:ing|er)\b/gi,
+      /\bcloud workloads?\b/gi,
+    ]),
+  );
+  add(
+    "CLOUD_COMPUTING_SYSTEMS",
+    matchEvidence(title, [/\bcloud services?\b/gi]),
+  );
+  if (
+    /\bcloud services?\b/i.test(abstract) &&
+    /\b(?:architecture|platform|infrastructure|deployment|provisioning|orchestration|scheduling|workload|resource allocation|distributed systems?)\b/i.test(
+      abstract,
+    )
+  ) {
+    add("CLOUD_COMPUTING_SYSTEMS", ["cloud-service-system-context"]);
+  }
+  add(
+    "SERVERLESS_FAAS",
+    matchEvidence(combined, [
+      /\bserverless(?: computing| platforms?| systems?| functions?| workloads?)?\b/gi,
+      /\bfunction[- ]as[- ]a[- ]service\b/gi,
+      /\bfaas\b/gi,
+    ]),
+  );
+  add(
+    "DATACENTER_INFRASTRUCTURE",
+    matchEvidence(combined, [
+      /\bdata[ -]?centers?\b/gi,
+      /\bdatacenter(?:s| infrastructure| networks?| workloads?)?\b/gi,
+    ]),
+  );
+  add(
+    "CHINESE_CLOUD_COMPUTING",
+    matchEvidence(combined, [
+      /云计算|云端计算|云平台|无服务器|云资源调度|云工作负载|数据中心/gu,
+    ]),
+  );
+  if (
+    /云服务/u.test(title) ||
+    (/云服务/u.test(abstract) &&
+      /架构|平台|基础设施|部署|编排|调度|工作负载|资源分配|分布式系统/u.test(
+        abstract,
+      ))
+  ) {
+    add("CHINESE_CLOUD_COMPUTING", ["云服务系统语境"]);
   }
 
   return {

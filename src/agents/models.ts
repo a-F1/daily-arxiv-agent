@@ -1,34 +1,7 @@
 import { Cursor, type ModelListItem, type ModelSelection } from "@cursor/sdk";
 
-export type ModelProvider = "claude" | "openai";
-
-export interface FlagshipModelConfig {
-  claude: string;
-  openai: string;
-  summary?: string;
-  idea?: string;
-}
-
-export interface ResolvedModels {
-  claude: ModelSelection;
-  openai: ModelSelection;
-  summary: ModelSelection;
-  idea: ModelSelection;
-}
-
-export const DEFAULT_MODEL_ENV = {
-  claude: "CURSOR_CLAUDE_MODEL",
-  openai: "CURSOR_OPENAI_MODEL",
-  summary: "CURSOR_SUMMARY_MODEL",
-  idea: "CURSOR_IDEA_MODEL",
-} as const;
-
-export const DEFAULT_FAST_MODEL = "composer-2.5";
-
-const PROVIDER_MARKERS: Record<ModelProvider, RegExp> = {
-  claude: /(claude|anthropic)/i,
-  openai: /(gpt|openai|o[134](?:[-.]|$))/i,
-};
+export const SUMMARY_MODEL_ENV = "CURSOR_SUMMARY_MODEL";
+export const DEFAULT_SUMMARY_MODEL = "composer-2.5";
 
 function searchableNames(model: ModelListItem): string[] {
   return [model.id, model.displayName, ...(model.aliases ?? [])];
@@ -44,94 +17,25 @@ function findExactModel(
   );
 }
 
-export function resolveConfiguredModel(
-  provider: ModelProvider,
-  configuredId: string,
-  available: readonly ModelListItem[],
-): ModelSelection {
-  if (!configuredId.trim()) {
-    throw new Error(`A ${provider} flagship model ID must be configured.`);
-  }
-
-  const model = findExactModel(configuredId, available);
-  if (!model) {
-    const candidates = available
-      .filter((candidate) =>
-        searchableNames(candidate).some((name) => PROVIDER_MARKERS[provider].test(name)),
-      )
-      .map((candidate) => candidate.id)
-      .slice(0, 20);
-    throw new Error(
-      `Configured ${provider} model "${configuredId}" is not available to this Cursor account. ` +
-        `Available ${provider} candidates: ${candidates.join(", ") || "none"}.`,
-    );
-  }
-
-  if (!searchableNames(model).some((name) => PROVIDER_MARKERS[provider].test(name))) {
-    throw new Error(
-      `Configured ${provider} model "${configuredId}" resolved to "${model.id}", which is not a model from provider ${provider}.`,
-    );
-  }
-
-  return { id: model.id };
-}
-
-export function readModelConfig(
+export function readSummaryModelConfig(
   env: NodeJS.ProcessEnv = process.env,
-): FlagshipModelConfig {
-  const claude = env[DEFAULT_MODEL_ENV.claude];
-  const openai = env[DEFAULT_MODEL_ENV.openai];
-  if (!claude || !openai) {
-    throw new Error(
-      `Set ${DEFAULT_MODEL_ENV.claude} and ${DEFAULT_MODEL_ENV.openai} to explicit account model IDs.`,
-    );
-  }
-  return {
-    claude,
-    openai,
-    summary: env[DEFAULT_MODEL_ENV.summary] || DEFAULT_FAST_MODEL,
-    idea:
-      env[DEFAULT_MODEL_ENV.idea] ??
-      env[DEFAULT_MODEL_ENV.summary] ??
-      DEFAULT_FAST_MODEL,
-  };
+): string {
+  return env[SUMMARY_MODEL_ENV] || DEFAULT_SUMMARY_MODEL;
 }
 
-function resolveAvailableModel(
-  configuredId: string,
-  available: readonly ModelListItem[],
-  purpose: string,
-): ModelSelection {
-  const model = findExactModel(configuredId, available);
-  if (!model) {
-    throw new Error(
-      `Configured ${purpose} model "${configuredId}" is not available to this Cursor account.`,
-    );
-  }
-  return { id: model.id };
-}
-
-export async function resolveFlagshipModels(options: {
+export async function resolveSummaryModel(options: {
   apiKey: string;
-  configured?: FlagshipModelConfig;
+  configured?: string;
   listModels?: (apiKey: string) => Promise<ModelListItem[]>;
-}): Promise<ResolvedModels> {
-  const configured = options.configured ?? readModelConfig();
+}): Promise<ModelSelection> {
+  const configured = options.configured ?? readSummaryModelConfig();
   const available = await (options.listModels ??
     ((apiKey) => Cursor.models.list({ apiKey })))(options.apiKey);
-
-  return {
-    claude: resolveConfiguredModel("claude", configured.claude, available),
-    openai: resolveConfiguredModel("openai", configured.openai, available),
-    summary: resolveAvailableModel(
-      configured.summary ?? DEFAULT_FAST_MODEL,
-      available,
-      "summary",
-    ),
-    idea: resolveAvailableModel(
-      configured.idea ?? configured.summary ?? DEFAULT_FAST_MODEL,
-      available,
-      "idea",
-    ),
-  };
+  const model = findExactModel(configured, available);
+  if (!model) {
+    throw new Error(
+      `Configured summary model "${configured}" is not available to this Cursor account.`,
+    );
+  }
+  return { id: model.id };
 }

@@ -15,6 +15,12 @@ export type Paper = {
   releaseDate?: string;
   announcementType?: string;
   releaseSourceUrl?: string;
+  oneLiner: string;
+  motivation: string[];
+  method: string[];
+  experimentSetup: string[];
+  results: string[];
+  trainingResources: string[];
   summary: string;
   summaryZh?: string;
   whyItMatters?: string;
@@ -66,6 +72,11 @@ function texts(value: unknown): string[] {
   return value
     .map((item) => (typeof item === "string" ? item : text((item as Record<string, unknown>)?.text)))
     .filter(Boolean);
+}
+
+function bullets(value: unknown): string[] {
+  if (typeof value === "string") return value.trim() ? [value.trim()] : [];
+  return texts(value);
 }
 
 function authorNames(value: unknown): string[] {
@@ -124,14 +135,23 @@ function paper(value: unknown, index: number, domainNames: Map<string, string>):
   const keyResults = texts(summary.results).length
     ? texts(summary.results)
     : texts(summary.keyResults);
+  const motivation = bullets(summary.motivation).length
+    ? bullets(summary.motivation)
+    : bullets(summary.problem);
+  const method = bullets(summary.method).length
+    ? bullets(summary.method)
+    : bullets(summary.approach);
+  const experimentSetup = bullets(summary.experimentSetup);
+  const trainingResources = bullets(summary.trainingResources);
+  const oneLiner = text(summary.oneLiner);
   const summaryParts = [
-    text(summary.oneLiner),
-    `研究动机：${text(summary.motivation, text(summary.problem))}`,
-    `研究方法：${text(summary.method, text(summary.approach))}`,
-    `实验设置：${text(summary.experimentSetup)}`,
+    oneLiner,
+    ...motivation,
+    ...method,
+    ...experimentSetup,
     ...keyResults,
-    `训练资源：${text(summary.trainingResources)}`,
-  ].filter((part) => !part.endsWith("："));
+    ...trainingResources,
+  ].filter(Boolean);
   const ideaList = prose(item.ideas, ["title", "hypothesis", "expectedContribution"]);
   const refinementList = prose(item.refinements, [
     "originalIdeaTitle",
@@ -156,6 +176,12 @@ function paper(value: unknown, index: number, domainNames: Map<string, string>):
     releaseDate: text(source.releaseDate, text(source.announcedOn)) || undefined,
     announcementType: text(source.announcementType) || undefined,
     releaseSourceUrl: text(source.releaseSourceUrl) || undefined,
+    oneLiner: oneLiner || text(source.summary, text(source.abstract)),
+    motivation,
+    method,
+    experimentSetup,
+    results: keyResults,
+    trainingResources,
     summary: summaryParts.join(" ") || text(source.summary, text(source.abstract)),
     summaryZh:
       text(source.summaryZh, text(source.summary_zh, text(analysis.summary))) || undefined,
@@ -248,10 +274,10 @@ export function normalizeReport(path: string, value: unknown): Report {
         ? report.releaseStatus
         : "complete",
     selectionPolicy: Object.keys(selectionPolicy).length
-      ? `使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross；${selectionPolicy.hardExcludedTopicsEnabled === true ? "在评分前硬排除 safety、security、attack、defense 及相关攻防主题；绝不使用被排除或旧日期论文回填。" : "绝不使用旧日期论文回填。"}`
+      ? `使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross；${selectionPolicy.hardExcludedTopicsEnabled === true ? "在评分与配额前分别硬排除安全攻防主题和云计算 / serverless / 数据中心主题；绝不使用被排除或旧日期论文回填。" : "绝不使用旧日期论文回填。"}`
       : undefined,
     exclusionSummary: Object.keys(object(report.exclusionSummary)).length
-      ? `硬排除 ${Number(object(report.exclusionSummary).totalExcluded ?? 0)} 篇；reason code：${Object.entries(object(object(report.exclusionSummary).byReason))
+      ? `硬排除 ${Number(object(report.exclusionSummary).totalExcluded ?? 0)} 篇（安全攻防 ${Number(object(object(report.exclusionSummary).byPolicy).safetySecurity ?? 0)} 篇，云计算 ${Number(object(object(report.exclusionSummary).byPolicy).cloudComputing ?? 0)} 篇）；reason code：${Object.entries(object(object(report.exclusionSummary).byReason))
           .map(([reason, count]) => `${reason}=${Number(count)}`)
           .join("、") || "无"}`
       : undefined,

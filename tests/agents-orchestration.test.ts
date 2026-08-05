@@ -5,61 +5,42 @@ import {
   structuredCorrectionPrompt,
 } from "../src/agents/client.js";
 import {
-  readModelConfig,
-  resolveConfiguredModel,
+  readSummaryModelConfig,
+  resolveSummaryModel,
 } from "../src/agents/models.js";
-import {
-  debateDecisionPrompt,
-  debateTurnPrompt,
-  finalizeIdeaPrompt,
-  initialIdeaPrompt,
-  refineIdeaPrompt,
-  reviseRejectedIdeaPrompt,
-  summaryPrompt,
-} from "../src/agents/prompts.js";
+import { summaryPrompt } from "../src/agents/prompts.js";
 
 const models = [
   {
-    id: "claude-opus-account-id",
-    displayName: "Claude Opus",
-    aliases: ["claude-flagship"],
-  },
-  {
-    id: "gpt-account-id",
-    displayName: "OpenAI GPT",
-    aliases: ["openai-flagship"],
+    id: "composer-account-id",
+    displayName: "Composer 2.5",
+    aliases: ["composer-2.5"],
   },
 ];
 
-describe("flagship model resolution", () => {
-  it("uses the fast default for summary and idea stages", () => {
-    expect(
-      readModelConfig({
-        CURSOR_CLAUDE_MODEL: "claude-flagship",
-        CURSOR_OPENAI_MODEL: "openai-flagship",
-      }),
-    ).toMatchObject({
-      summary: "composer-2.5",
-      idea: "composer-2.5",
-    });
+describe("summary model resolution", () => {
+  it("uses the fast summary default", () => {
+    expect(readSummaryModelConfig({})).toBe("composer-2.5");
   });
 
   it("resolves an exact account alias to its canonical ID", () => {
     expect(
-      resolveConfiguredModel("claude", "claude-flagship", models),
-    ).toEqual({ id: "claude-opus-account-id" });
+      resolveSummaryModel({
+        apiKey: "test",
+        configured: "composer-2.5",
+        listModels: async () => models,
+      }),
+    ).resolves.toEqual({ id: "composer-account-id" });
   });
 
   it("fails instead of selecting a nearby model", () => {
-    expect(() =>
-      resolveConfiguredModel("openai", "missing-openai-model", models),
-    ).toThrow(/not available/);
-  });
-
-  it("rejects a configured model from the wrong provider", () => {
-    expect(() =>
-      resolveConfiguredModel("openai", "claude-flagship", models),
-    ).toThrow(/not a model from provider openai/);
+    expect(
+      resolveSummaryModel({
+        apiKey: "test",
+        configured: "missing-model",
+        listModels: async () => models,
+      }),
+    ).rejects.toThrow(/not available/);
   });
 });
 
@@ -115,49 +96,13 @@ describe("run budget", () => {
   });
 });
 
-describe("debate context compaction", () => {
-  it("only includes recent turns", () => {
-    const prompt = debateTurnPrompt({
-      role: "skeptic",
-      model: "test-model",
-      idea: { title: "Idea" },
-      round: 5,
-      history: Array.from({ length: 8 }, (_, index) => ({
-        claim: `claim-${index}`,
-      })),
-    });
-    expect(prompt).not.toContain("claim-0");
-    expect(prompt).toContain("claim-7");
-  });
-});
-
 describe("simplified Chinese output instructions", () => {
-  it("applies the same explicit language contract to every model stage", () => {
-    const prompts = [
-      summaryPrompt({ title: "Original English title" }),
-      initialIdeaPrompt([], "AI Agents"),
-      refineIdeaPrompt({ draft: {}, references: [], attempt: 1 }),
-      finalizeIdeaPrompt({ draft: {}, references: [] }),
-      reviseRejectedIdeaPrompt({ draft: {}, debate: {}, references: [] }),
-      debateTurnPrompt({
-        role: "advocate",
-        model: "test-model",
-        idea: {},
-        round: 1,
-        history: [],
-      }),
-      debateDecisionPrompt({
-        idea: {},
-        turns: [],
-        round: 3,
-        mayExtend: false,
-      }),
-    ];
-
-    for (const prompt of prompts) {
-      expect(prompt).toContain("所有叙述性字符串必须使用简体中文");
-      expect(prompt).toContain("原始论文标题、作者名、模型名");
-    }
+  it("requires five Chinese bullet-array sections", () => {
+    const prompt = summaryPrompt({ title: "Original English title" });
+    expect(prompt).toContain("所有叙述性字符串必须使用简体中文");
+    expect(prompt).toContain("原始论文标题、作者名、模型名");
+    expect(prompt).toContain('"motivation":string[]');
+    expect(prompt).toContain('"trainingResources":string[]');
   });
 
   it("builds one corrective retry that repeats the Chinese requirement", () => {

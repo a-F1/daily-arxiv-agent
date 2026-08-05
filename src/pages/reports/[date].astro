@@ -23,15 +23,15 @@ const generated = report.generatedAt
 ---
 
 <Layout
-  title={`${formatDate(report.date)}研究简报 · 每日 arXiv`}
-  description={`${formatDate(report.date)} arXiv 精选论文与研究分析。`}
+  title={`${formatDate(report.date)}论文精读 · 每日 arXiv`}
+  description={`${formatDate(report.date)} arXiv 当日发布论文精读。`}
 >
   <header class="report-banner">
     <div class="shell">
       <a class="back-link" href={`${base}archive/`}>← 返回全部简报</a>
       <div class="report-title-row">
         <div>
-          <p class="eyebrow">每日研究报告</p>
+          <p class="eyebrow">每日九篇论文精读</p>
           <h1>{formatDate(report.date)}</h1>
         </div>
         <span class="domain-tag">{report.papers.length} 篇精选</span>
