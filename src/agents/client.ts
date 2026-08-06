@@ -14,6 +14,15 @@ export interface UsageSnapshot {
   estimatedCostCents: number;
 }
 
+export interface RunBudgetStatus extends UsageSnapshot {
+  reservedRuns: number;
+  reservedTokens: number;
+  failedStartedRuns: number;
+  consumedRuns: number;
+  maxRuns: number;
+  maxTokens: number;
+}
+
 export interface GuardLimits {
   maxRuns: number;
   maxTokens: number;
@@ -24,6 +33,7 @@ export interface GuardLimits {
 export class RunBudget {
   private usage: UsageSnapshot;
   private reservedTokens = 0;
+  private failedStartedRuns = 0;
   private readonly reservations = new Map<symbol, number>();
 
   constructor(
@@ -46,7 +56,7 @@ export class RunBudget {
   }
 
   assertCanRun(): void {
-    if (this.usage.runs >= this.limits.maxRuns) {
+    if (this.consumedRuns() >= this.limits.maxRuns) {
       throw new Error(`Run budget exhausted at ${this.limits.maxRuns} runs.`);
     }
     if (this.usage.totalTokens + this.reservedTokens >= this.limits.maxTokens) {
@@ -71,7 +81,6 @@ export class RunBudget {
       throw new Error("The next model run would exceed its configured token budget.");
     }
     const reservation = Symbol("model-run");
-    this.usage.runs += 1;
     this.reservedTokens += estimate;
     this.reservations.set(reservation, estimate);
     return reservation;
@@ -80,6 +89,7 @@ export class RunBudget {
   complete(reservation: symbol, result: RunResult): void {
     const estimate = this.takeReservation(reservation);
     this.reservedTokens -= estimate;
+    this.usage.runs += 1;
     this.recordUsage(result);
   }
 
@@ -87,11 +97,11 @@ export class RunBudget {
     const estimate = this.takeReservation(reservation);
     this.reservedTokens -= estimate;
     if (runStarted) {
-      // Usage may be unavailable after a timeout; conservatively charge the
-      // reservation so retries cannot silently bypass the daily token guard.
-      this.usage.totalTokens += estimate;
-    } else {
-      this.usage.runs -= 1;
+      // Count unknown started attempts only for this process. They protect the
+      // live hard limit but are deliberately absent from persisted snapshots,
+      // because no completed usage was observed and a later schedule must not
+      // inherit a suspended reservation.
+      this.failedStartedRuns += 1;
     }
   }
 
@@ -124,6 +134,22 @@ export class RunBudget {
 
   snapshot(): UsageSnapshot {
     return { ...this.usage };
+  }
+
+  status(): RunBudgetStatus {
+    return {
+      ...this.snapshot(),
+      reservedRuns: this.reservations.size,
+      reservedTokens: this.reservedTokens,
+      failedStartedRuns: this.failedStartedRuns,
+      consumedRuns: this.consumedRuns(),
+      maxRuns: this.limits.maxRuns,
+      maxTokens: this.limits.maxTokens,
+    };
+  }
+
+  private consumedRuns(): number {
+    return this.usage.runs + this.reservations.size + this.failedStartedRuns;
   }
 }
 
@@ -159,6 +185,7 @@ export interface RunContext {
   candidate?: number;
   round?: number;
   role?: string;
+  schemaAttempt?: number;
 }
 
 export interface AgentClientOptions {
@@ -353,7 +380,10 @@ export class AgentClient {
           options.idempotencyKey
             ? `${options.idempotencyKey}:schema:${attempt}`
             : undefined,
-          options.context ?? { stage: "idea" },
+          {
+            ...(options.context ?? { stage: "summary" }),
+            schemaAttempt: attempt,
+          },
         );
         return options.schema.parse(extractJson(assertFinished(result)));
       } catch (error) {
@@ -386,7 +416,19 @@ export class AgentClient {
     let lastError: unknown;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const release = await this.semaphore.acquire();
-      const reservation = this.options.budget.reserve(estimatedRunTokens(prompt));
+      let reservation: symbol;
+      try {
+        reservation = this.options.budget.reserve(estimatedRunTokens(prompt));
+      } catch (error) {
+        emit("model_run_budget_rejected", {
+          ...context,
+          model: agent.model?.id,
+          attempt,
+          budget: this.options.budget.status(),
+        });
+        release();
+        throw error;
+      }
       const startedAt = Date.now();
       const fields = {
         ...context,
@@ -407,6 +449,7 @@ export class AgentClient {
           ...fields,
           runId: run.id,
           agentId: run.agentId,
+          budget: this.options.budget.status(),
         });
         const result = await waitForRun(
           run,
@@ -428,6 +471,7 @@ export class AgentClient {
           inputTokens: result.usage?.inputTokens ?? 0,
           outputTokens: result.usage?.outputTokens ?? 0,
           totalTokens: result.usage?.totalTokens ?? 0,
+          budget: this.options.budget.status(),
         });
         return result;
       } catch (error) {
@@ -444,6 +488,7 @@ export class AgentClient {
           elapsedMs: Date.now() - startedAt,
           retryable,
           errorType: error instanceof Error ? error.name : "unknown",
+          budget: this.options.budget.status(),
         });
         if (!retryable || attempt === 1) throw error;
         await delay(1_000 * 2 ** attempt + Math.floor(Math.random() * 500));

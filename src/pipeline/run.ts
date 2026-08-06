@@ -49,7 +49,8 @@ interface DailyCheckpoint {
   updatedAt: string;
 }
 
-const PIPELINE_VERSION = "daily-paper-summary-v5-cloud-exclusions";
+const PIPELINE_VERSION = "daily-paper-summary-v6-resumable-budget";
+const MAX_SUMMARY_ATTEMPTS_PER_PAPER = 2;
 const SELECTION_POLICY: SelectionPolicy = {
   source: "arxiv-rss",
   timeZone: "America/New_York",
@@ -115,6 +116,10 @@ export interface DailyRunOptions {
   exclusionSummary?: ExclusionSummary;
   checkpointStore?: CheckpointStore;
   client?: AgentClient;
+  clientFactory?: (
+    budget: RunBudget,
+    onUsage: () => Promise<void>,
+  ) => AgentClient;
   now?: () => Date;
 }
 
@@ -184,6 +189,9 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     summaryConcurrency: positiveIntegerEnv("SUMMARY_CONCURRENCY", 3),
     modelTimeoutMs: positiveIntegerEnv("MODEL_TIMEOUT_MS", 600_000),
     maxPaperTextChars: positiveIntegerEnv("MAX_PAPER_TEXT_CHARS", 40_000),
+    maxDailyRuns: positiveIntegerEnv("MAX_DAILY_RUNS", 18),
+    maxDailyTokens: positiveIntegerEnv("MAX_DAILY_TOKENS", 2_000_000),
+    maxSummaryAttemptsPerPaper: MAX_SUMMARY_ATTEMPTS_PER_PAPER,
   };
   const hash = inputHash(options, summaryModel, runtimeConfig);
   const store =
@@ -191,13 +199,13 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     new FileCheckpointStore(join(options.cwd ?? process.cwd(), "data", "checkpoints"));
   const loaded = await store.load(options.date);
   const existing =
-    loaded?.version === 3 && loaded.inputHash === hash ? loaded : undefined;
+    loaded?.version === 4 && loaded.inputHash === hash ? loaded : undefined;
   if (loaded && !existing) {
     console.warn(
       JSON.stringify({
         event: "checkpoint_ignored",
         date: options.date,
-        reason: loaded.version !== 3 ? "version_changed" : "inputs_changed",
+        reason: loaded.version !== 4 ? "version_changed" : "inputs_changed",
       }),
     );
   }
@@ -205,15 +213,50 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
     return DailyReportSchema.parse(existing.report);
   }
 
+  const selectedPaperIds = new Set(
+    options.papers.map(({ paper }) => paper.baseArxivId),
+  );
+  const completedPaperIds = new Set(
+    Object.values(existing?.domains ?? {}).flatMap((domain) =>
+      Object.keys(domain?.summaries ?? {}).filter((paperId) =>
+        selectedPaperIds.has(paperId),
+      ),
+    ),
+  );
+  const pendingPaperCount = selectedPaperIds.size - completedPaperIds.size;
+  const completedRuns = existing?.budget.runs ?? 0;
+  const computedRunBudget =
+    completedRuns + pendingPaperCount * MAX_SUMMARY_ATTEMPTS_PER_PAPER;
+  const hardRunLimit = runtimeConfig.maxDailyRuns;
+  const maxRuns = Math.min(computedRunBudget, hardRunLimit);
+  console.log(
+    JSON.stringify({
+      event: "daily_run_budget",
+      date: options.date,
+      selectedPapers: selectedPaperIds.size,
+      completedPapers: completedPaperIds.size,
+      pendingPapers: pendingPaperCount,
+      maxAttemptsPerPendingPaper: MAX_SUMMARY_ATTEMPTS_PER_PAPER,
+      fixedGenerationOverhead: 0,
+      computedRunBudget,
+      hardRunLimit,
+      effectiveRunBudget: maxRuns,
+      restoredUsage: existing?.budget ?? {
+        runs: 0,
+        totalTokens: 0,
+        estimatedCostCents: 0,
+      },
+    }),
+  );
   const budget = new RunBudget(
     {
-      maxRuns: positiveIntegerEnv("MAX_DAILY_RUNS", 12),
-      maxTokens: positiveIntegerEnv("MAX_DAILY_TOKENS", 2_000_000),
+      maxRuns,
+      maxTokens: runtimeConfig.maxDailyTokens,
     },
     existing?.budget,
   );
   const state: DailyCheckpoint = existing ?? {
-    version: 3,
+    version: 4,
     date: options.date,
     inputHash: hash,
     status: "running",
@@ -231,6 +274,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
   };
   const client =
     options.client ??
+    options.clientFactory?.(budget, persist) ??
     new AgentClient({
       apiKey: options.apiKey,
       cwd: options.cwd ?? process.cwd(),

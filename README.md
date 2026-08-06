@@ -85,4 +85,8 @@ code。
 全局上限。`SUMMARY_CONCURRENCY` 只限制摘要任务，仍受全局上限约束。
 `MODEL_TIMEOUT_MS=600000` 为单次调用设置十分钟上限；
 `MAX_PAPER_TEXT_CHARS=40000` 控制送入摘要模型的 PDF 关键章节长度。
-默认预算为 `MAX_DAILY_RUNS=12`、`MAX_DAILY_TOKENS=2000000`，为最多九次正常摘要及有限重试保留余量。
+生成调用预算按“checkpoint 中已完成调用 + 当前待处理论文数 × 每篇最多 2
+次结构化摘要尝试”动态计算，并受 `MAX_DAILY_RUNS=18` 硬上限约束；模型列表解析
+和 agent 创建不计入生成预算。并发 reservation 仅在当前进程参与上限判断，只有
+获得实际完成结果的调用及 token 才写入 checkpoint，失败 schedule 可按 paperId
+继续未完成摘要。`MAX_DAILY_TOKENS=2000000` 仍作为独立 token 硬上限。

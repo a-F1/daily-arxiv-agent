@@ -92,7 +92,38 @@ describe("run budget", () => {
     const budget = new RunBudget({ maxRuns: 2, maxTokens: 100 });
     const reservation = budget.reserve(20);
     budget.release(reservation, true);
-    expect(budget.snapshot()).toMatchObject({ runs: 1, totalTokens: 20 });
+    expect(budget.snapshot()).toMatchObject({ runs: 0, totalTokens: 0 });
+    expect(budget.status()).toMatchObject({
+      failedStartedRuns: 1,
+      consumedRuns: 1,
+    });
+  });
+
+  it("allows eighteen completed summary attempts and blocks the nineteenth", () => {
+    const budget = new RunBudget({ maxRuns: 18, maxTokens: 1_000 });
+    for (let index = 0; index < 18; index += 1) {
+      const reservation = budget.reserve(1);
+      budget.complete(reservation, {
+        id: `run-${index}`,
+        status: "finished",
+        result: "{}",
+      });
+    }
+    expect(budget.snapshot().runs).toBe(18);
+    expect(() => budget.reserve(1)).toThrow(/18 runs/);
+  });
+
+  it("counts concurrent reservations atomically without persisting them", () => {
+    const budget = new RunBudget({ maxRuns: 3, maxTokens: 100 });
+    budget.reserve(10);
+    budget.reserve(10);
+    budget.reserve(10);
+    expect(budget.snapshot().runs).toBe(0);
+    expect(budget.status()).toMatchObject({
+      reservedRuns: 3,
+      consumedRuns: 3,
+    });
+    expect(() => budget.reserve(10)).toThrow(/3 runs/);
   });
 });
 
