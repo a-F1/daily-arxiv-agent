@@ -11,6 +11,7 @@ import {
   SelectionPolicySchema,
   isSimplifiedChineseNarrative,
 } from "../src/schema/report.js";
+import { normalizeSummaryOutput } from "../src/pipeline/summarize.js";
 
 describe("research output schemas", () => {
   it("requires the requested five-part paper summary", () => {
@@ -66,6 +67,28 @@ describe("simplified Chinese narrative schemas", () => {
     expect(isSimplifiedChineseNarrative("该方法在三个基准上显著提升准确率。")).toBe(true);
     expect(isSimplifiedChineseNarrative("The method improves accuracy on three benchmarks.")).toBe(false);
     expect(isSimplifiedChineseNarrative("該方法使用繁體中文描述研究結果。")).toBe(false);
+  });
+
+  it("repairs safe list-shape drift and drops isolated English list items", () => {
+    const normalized = normalizeSummaryOutput({
+      oneLiner: "该论文给出新的实验结论。",
+      motivation: "现有方法仍有明显局限。",
+      method: ["作者设计了分层处理方法。"],
+      experimentSetup: ["实验覆盖三个公开基准。"],
+      results: [
+        "主要指标相对基线提升五个百分点。",
+        "Accuracy improves by five points.",
+      ],
+      trainingResources: ["论文未披露完整计算资源。"],
+      limitations: ["尚未验证更大规模的数据。"],
+      significance: ["该结果为后续研究提供实证依据。"],
+    });
+    expect(ChinesePaperSummarySchema.safeParse(normalized).success).toBe(true);
+    expect(normalized).toMatchObject({
+      motivation: ["现有方法仍有明显局限。"],
+      results: ["主要指标相对基线提升五个百分点。"],
+      significance: "该结果为后续研究提供实证依据。",
+    });
   });
 
   it("requires Chinese for summary and idea narrative fields", () => {
