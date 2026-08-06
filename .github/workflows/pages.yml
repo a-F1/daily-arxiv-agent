@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Let an accepted Pages deployment finish before publishing a newer commit.
+  # Cancellation can leave the SHA-scoped Pages deployment stuck or cancelled.
+  cancel-in-progress: false
 
 jobs:
   build:
