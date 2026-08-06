@@ -190,6 +190,22 @@ describe("simplified Chinese narrative schemas", () => {
         AI_SAFETY_ALIGNMENT: 1,
       },
     }).totalExcluded).toBe(2);
+    expect(ExclusionSummarySchema.parse({
+      totalExcluded: 2,
+      byReason: {
+        BIAS_SEXISM_FAIRNESS: 1,
+        LANGUAGE_TRANSLATION: 1,
+      },
+      byPolicy: {
+        safetySecurity: 0,
+        cloudComputing: 0,
+      },
+    }).byPolicy).toEqual({
+      safetySecurity: 0,
+      cloudComputing: 0,
+      biasFairness: 0,
+      languageTranslation: 0,
+    });
     expect(() => ExclusionSummarySchema.parse({
       totalExcluded: 1,
       byReason: { UNKNOWN_REASON: 1 },

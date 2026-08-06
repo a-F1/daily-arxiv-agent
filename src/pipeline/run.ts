@@ -49,7 +49,7 @@ interface DailyCheckpoint {
   updatedAt: string;
 }
 
-const PIPELINE_VERSION = "daily-paper-summary-v6-resumable-budget";
+const PIPELINE_VERSION = "daily-paper-summary-v7-topic-preferences";
 const MAX_SUMMARY_ATTEMPTS_PER_PAPER = 2;
 const SELECTION_POLICY: SelectionPolicy = {
   source: "arxiv-rss",
@@ -61,7 +61,7 @@ const SELECTION_POLICY: SelectionPolicy = {
   maxPerDomain: 3,
   hardExcludedTopicsEnabled: true,
   excludedTopicPolicyVersion:
-    "safety-security-attack-defense-v1+cloud-computing-v1",
+    "safety-security-attack-defense-v1+cloud-computing-v1+bias-fairness-v1+language-translation-v1",
 };
 
 export interface CheckpointStore {
@@ -382,7 +382,7 @@ async function executeDailyRun(options: DailyRunOptions): Promise<DailyReport> {
         inputHash: hash,
         notes: [
           `严格使用 ${options.date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross。`,
-          `评分与配额前执行 safety/security/attack/defense 与云计算主题硬排除；分类统计：${JSON.stringify(options.exclusionSummary?.byPolicy ?? { safetySecurity: 0, cloudComputing: 0 })}；reason code：${JSON.stringify(options.exclusionSummary?.byReason ?? {})}。`,
+          `评分与配额前执行安全攻防、云计算、bias/fairness 与语言翻译主题硬排除；分类统计：${JSON.stringify(options.exclusionSummary?.byPolicy ?? { safetySecurity: 0, cloudComputing: 0, biasFairness: 0, languageTranslation: 0 })}；reason code：${JSON.stringify(options.exclusionSummary?.byReason ?? {})}。`,
           `仅使用摘要模型 ${summaryModel.id}，每篇论文至多一次摘要调用；不生成 research idea、refinement、prior-art 或 debate。`,
           `用量：${budget.snapshot().runs} 次调用，${budget.snapshot().totalTokens} 个 token。`,
           `流水线版本：${PIPELINE_VERSION}；提示词版本：${PROMPT_VERSION}。`,
@@ -455,6 +455,8 @@ export function applyHardTopicExclusions(
   const byReason: Partial<Record<ExcludedTopicReasonCode, number>> = {};
   let safetySecurity = 0;
   let cloudComputing = 0;
+  let biasFairness = 0;
+  let languageTranslation = 0;
   let totalExcluded = 0;
   for (const paper of papers) {
     const decision = classifyExcludedTopic(paper);
@@ -483,10 +485,31 @@ export function applyHardTopicExclusions(
             "SERVERLESS_FAAS",
             "DATACENTER_INFRASTRUCTURE",
             "CHINESE_CLOUD_COMPUTING",
+            "BIAS_SEXISM_FAIRNESS",
+            "CHINESE_BIAS_FAIRNESS",
+            "LANGUAGE_TRANSLATION",
+            "CHINESE_LANGUAGE_TRANSLATION",
           ].includes(reason),
       )
     ) {
       safetySecurity += 1;
+    }
+    if (
+      decision.reasonCodes.some((reason) =>
+        ["BIAS_SEXISM_FAIRNESS", "CHINESE_BIAS_FAIRNESS"].includes(reason),
+      )
+    ) {
+      biasFairness += 1;
+    }
+    if (
+      decision.reasonCodes.some((reason) =>
+        [
+          "LANGUAGE_TRANSLATION",
+          "CHINESE_LANGUAGE_TRANSLATION",
+        ].includes(reason),
+      )
+    ) {
+      languageTranslation += 1;
     }
     console.log(JSON.stringify({
       event: "paper_hard_excluded",
@@ -503,7 +526,12 @@ export function applyHardTopicExclusions(
     summary: {
       totalExcluded,
       byReason,
-      byPolicy: { safetySecurity, cloudComputing },
+      byPolicy: {
+        safetySecurity,
+        cloudComputing,
+        biasFairness,
+        languageTranslation,
+      },
     },
   };
 }
@@ -515,7 +543,12 @@ function emptyReleaseReport(
   exclusionSummary: ExclusionSummary = {
     totalExcluded: 0,
     byReason: {},
-    byPolicy: { safetySecurity: 0, cloudComputing: 0 },
+    byPolicy: {
+      safetySecurity: 0,
+      cloudComputing: 0,
+      biasFairness: 0,
+      languageTranslation: 0,
+    },
   },
 ): DailyReport {
   const noRelease = releaseCount === 0;
@@ -537,14 +570,14 @@ function emptyReleaseReport(
         notes: [
           `严格使用 ${date} 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross`,
           `官方同日发布公告数量：${releaseCount}`,
-          `评分与配额前执行安全攻防与云计算两类硬排除；分类计数：${JSON.stringify(exclusionSummary.byPolicy ?? { safetySecurity: 0, cloudComputing: 0 })}；reason code：${JSON.stringify(exclusionSummary.byReason)}`,
+          `评分与配额前执行安全攻防、云计算、bias/fairness 与语言翻译硬排除；分类计数：${JSON.stringify(exclusionSummary.byPolicy ?? { safetySecurity: 0, cloudComputing: 0, biasFairness: 0, languageTranslation: 0 })}；reason code：${JSON.stringify(exclusionSummary.byReason)}`,
         ],
       },
     ],
     warnings: noRelease
       ? [`arXiv 在 ${date} 没有发布 new/cross 类型的新论文公告。`]
       : exclusionSummary.totalExcluded === releaseCount
-        ? [`${date} 的同日发布候选全部命中 safety/security/attack/defense 硬排除规则；未使用被排除论文回填。`]
+        ? [`${date} 的同日发布候选全部命中安全攻防、云计算、bias/fairness 或语言翻译硬排除规则；未使用被排除论文回填。`]
         : [`${date} 的剩余同日发布论文均未达到当前领域相关性阈值。`],
   });
 }

@@ -44,7 +44,7 @@ BibTeX、公式和必要技术专名可保留原文，英文论文输入本身�
 `releaseDate`、`announcementType` 和 `releaseSourceUrl`，报告保存完整
 `selectionPolicy`。某领域不足三篇时保留实际数量并记录缺口，不跨日回填。
 
-在领域评分和每领域三篇配额之前，流水线执行两类硬排除。第一类
+在领域评分和每领域三篇配额之前，流水线执行四类硬排除。第一类
 `safety-security-attack-defense-v1` 使用标题、摘要和 arXiv
 分类进行确定性主题判断，覆盖 AI safety/alignment、security/cybersecurity、
 attack/adversarial attack、jailbreak、prompt injection、poisoning、backdoor、
@@ -56,8 +56,15 @@ red teaming、defense/mitigation/guardrail 及对应中文主题。单独出现 
 infrastructure/platform/service、serverless/FaaS、cloud resource scheduling、
 cloud workload、data center/datacenter、云计算、云平台、无服务器、云资源调度、
 数据中心为研究主题的论文。仅把 cloud API 或 cloud storage 当工具、以及 point
-cloud / 点云论文不会触发。报告分别记录安全攻防与云计算排除数量和可审计 reason
-code。
+cloud / 点云论文不会触发。第三类 `bias-fairness-v1` 排除以 social/model/
+algorithmic/gender/racial/demographic bias、sexism、stereotype、fair AI、
+discrimination、debiasing、偏见、性别歧视、刻板印象、公平性、歧视或去偏为
+主题的论文；inductive/statistical/estimation/selection bias 等非社会偏见语境
+不会仅因 `bias` 单词触发。第四类 `language-translation-v1` 排除 machine/
+neural/multilingual/speech/document translation、translation quality/evaluation、
+translator、MT system 与对应中文主题；translation invariance/equivariance、
+图像平移和蛋白质 translation 不会触发。报告分别记录四类政策计数与可审计
+reason code。
 
 仓库没有报告数据时仍能完成构建。周末、假日或官方空批次会快速生成
 `releaseStatus=no-release` 的零论文报告且不调用模型。

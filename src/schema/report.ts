@@ -335,6 +335,10 @@ export const ExcludedTopicReasonCodeSchema = z.enum([
   "SERVERLESS_FAAS",
   "DATACENTER_INFRASTRUCTURE",
   "CHINESE_CLOUD_COMPUTING",
+  "BIAS_SEXISM_FAIRNESS",
+  "CHINESE_BIAS_FAIRNESS",
+  "LANGUAGE_TRANSLATION",
+  "CHINESE_LANGUAGE_TRANSLATION",
 ]);
 export type ExcludedTopicReasonCode = z.infer<
   typeof ExcludedTopicReasonCodeSchema
@@ -353,6 +357,8 @@ export const ExclusionSummarySchema = z
       .object({
         safetySecurity: z.number().int().nonnegative(),
         cloudComputing: z.number().int().nonnegative(),
+        biasFairness: z.number().int().nonnegative().default(0),
+        languageTranslation: z.number().int().nonnegative().default(0),
       })
       .optional(),
   })

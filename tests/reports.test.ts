@@ -77,6 +77,8 @@ describe("report idea visibility", () => {
     });
 
     expect(report.selectionPolicy).toContain("评分与配额前");
+    expect(report.selectionPolicy).toContain("bias");
+    expect(report.selectionPolicy).toContain("语言翻译");
     expect(report.exclusionSummary).toContain("硬排除 4 篇");
     expect(report.exclusionSummary).toContain("ATTACK_ADVERSARIAL=2");
   });

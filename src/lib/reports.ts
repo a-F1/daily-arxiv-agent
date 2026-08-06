@@ -274,10 +274,10 @@ export function normalizeReport(path: string, value: unknown): Report {
         ? report.releaseStatus
         : "complete",
     selectionPolicy: Object.keys(selectionPolicy).length
-      ? `使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross；${selectionPolicy.hardExcludedTopicsEnabled === true ? "在评分与配额前分别硬排除安全攻防主题和云计算 / serverless / 数据中心主题；绝不使用被排除或旧日期论文回填。" : "绝不使用旧日期论文回填。"}`
+      ? `使用 America/New_York 时区下的官方 arXiv RSS item.pubDate；只纳入 new/cross 公告，排除 replace/replace-cross；${selectionPolicy.hardExcludedTopicsEnabled === true ? "在评分与配额前分别硬排除安全攻防、云计算、bias / fairness / sexism 与语言翻译主题；绝不使用被排除或旧日期论文回填。" : "绝不使用旧日期论文回填。"}`
       : undefined,
     exclusionSummary: Object.keys(object(report.exclusionSummary)).length
-      ? `硬排除 ${Number(object(report.exclusionSummary).totalExcluded ?? 0)} 篇（安全攻防 ${Number(object(object(report.exclusionSummary).byPolicy).safetySecurity ?? 0)} 篇，云计算 ${Number(object(object(report.exclusionSummary).byPolicy).cloudComputing ?? 0)} 篇）；reason code：${Object.entries(object(object(report.exclusionSummary).byReason))
+      ? `硬排除 ${Number(object(report.exclusionSummary).totalExcluded ?? 0)} 篇（安全攻防 ${Number(object(object(report.exclusionSummary).byPolicy).safetySecurity ?? 0)} 篇，云计算 ${Number(object(object(report.exclusionSummary).byPolicy).cloudComputing ?? 0)} 篇，bias/fairness ${Number(object(object(report.exclusionSummary).byPolicy).biasFairness ?? 0)} 篇，语言翻译 ${Number(object(object(report.exclusionSummary).byPolicy).languageTranslation ?? 0)} 篇）；reason code：${Object.entries(object(object(report.exclusionSummary).byReason))
           .map(([reason, count]) => `${reason}=${Number(count)}`)
           .join("、") || "无"}`
       : undefined,

@@ -8,7 +8,8 @@ import {
   type ScoredPaper,
 } from "../schema/report.js";
 
-export const SELECTION_ALGORITHM_VERSION = "pre-rank-v3-cloud-exclusions";
+export const SELECTION_ALGORITHM_VERSION =
+  "pre-rank-v4-bias-translation-exclusions";
 
 export const EXCLUDED_TOPIC_REASON_CODES =
   ExcludedTopicReasonCodeSchema.options;
@@ -252,6 +253,83 @@ export function classifyExcludedTopic(
   ) {
     add("CHINESE_CLOUD_COMPUTING", ["云服务系统语境"]);
   }
+
+  add(
+    "BIAS_SEXISM_FAIRNESS",
+    matchEvidence(combined, [
+      /\b(?:algorithmic|social|societal|gender|racial|race|demographic|cultural) bias(?:es|ed)?\b/gi,
+      /\b(?:ai|artificial intelligence|models?|llms?|language models?) (?:bias(?:es|ed)?|fairness)\b/gi,
+      /\bbias(?:es)? in (?:ai|artificial intelligence|models?|llms?|language models?)\b/gi,
+      /\bsexism\b/gi,
+      /\bsexist\b/gi,
+      /\b(?:gender|racial|race|demographic) discrimination\b/gi,
+      /\b(?:social|gender|racial|cultural) stereotypes?\b/gi,
+      /\bde[- ]?bias(?:ing|ed)?\b/gi,
+      /\balgorithmic fairness\b/gi,
+      /\bfair ai\b/gi,
+    ]),
+  );
+  const nonSocialBiasContext =
+    /\b(?:(?:inductive|statistical|estimation|estimator|selection|sampling|measurement|finite[- ]sample|omitted[- ]variable) bias|bias terms?)\b/i;
+  const socialOrModelBiasContext =
+    /\b(?:social|societal|gender|racial|race|demographic|protected groups?|people|human|annotators?|cultural|sexism|stereotypes?|fairness|discrimination|language models?|llms?|artificial intelligence|ai models?)\b/i;
+  if (
+    /\bbias(?:es|ed)?\b/i.test(title) &&
+    !nonSocialBiasContext.test(title) &&
+    socialOrModelBiasContext.test(combined)
+  ) {
+    add("BIAS_SEXISM_FAIRNESS", ["bias-social-or-model-context"]);
+  }
+  if (
+    /\bfairness\b/i.test(title) &&
+    /\b(?:ai|algorithm|model|llm|language model|gender|racial|demographic|social)\b/i.test(
+      combined,
+    )
+  ) {
+    add("BIAS_SEXISM_FAIRNESS", ["fairness-social-or-model-context"]);
+  }
+  add(
+    "CHINESE_BIAS_FAIRNESS",
+    matchEvidence(combined, [
+      /社会偏见|模型偏见|算法偏见|性别偏见|种族偏见|人口偏见|性别歧视|刻板印象|算法公平性|人工智能公平性|模型公平性|去偏(?:见)?/gu,
+    ]),
+  );
+  if (
+    /偏见|偏差|公平性|歧视/u.test(title) &&
+    /社会|模型|算法|人工智能|大模型|语言模型|性别|种族|人口|文化|群体/u.test(
+      combined,
+    ) &&
+    !/统计偏差|估计偏差|选择偏差|抽样偏差|归纳偏差/u.test(title)
+  ) {
+    add("CHINESE_BIAS_FAIRNESS", ["偏见公平性社会或模型语境"]);
+  }
+
+  add(
+    "LANGUAGE_TRANSLATION",
+    matchEvidence(combined, [
+      /\b(?:machine|neural|multilingual|speech|document(?:-level)?) translation\b/gi,
+      /\btranslation (?:quality|evaluation|systems?|models?)\b/gi,
+      /\bprofessional translators?\b/gi,
+      /\bmt systems?\b/gi,
+    ]),
+  );
+  const nonLanguageTranslationContext =
+    /\b(?:translation invariance|translation equivariance|translation[- ]invariant|translation[- ]equivariant|image translation|protein translation|ribosomal translation)\b/i;
+  const languageTranslationContext =
+    /\b(?:languages?|multilingual|bilingual|cross[- ]lingual|source text|target language|lexical|linguistic|english|chinese|french|spanish|german|bleu|bertscore|wordplay|translator)\b/i;
+  if (
+    /\btranslat(?:e|es|ed|ing|ion|ions)\b/i.test(title) &&
+    languageTranslationContext.test(combined) &&
+    !nonLanguageTranslationContext.test(title)
+  ) {
+    add("LANGUAGE_TRANSLATION", ["translation-language-context"]);
+  }
+  add(
+    "CHINESE_LANGUAGE_TRANSLATION",
+    matchEvidence(combined, [
+      /机器翻译|神经翻译|多语言翻译|语音翻译|文档翻译|翻译系统|翻译质量|翻译评估/gu,
+    ]),
+  );
 
   return {
     excluded: reasons.size > 0,

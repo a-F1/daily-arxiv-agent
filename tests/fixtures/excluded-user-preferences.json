@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Learning Sexism Detection Using Multi-Agent Perspectivist Preference Optimization",
+    "abstract": "When people label text for sexism, they often disagree because they genuinely perceive sexism differently. We cluster annotators by labeling behavior and train language-model agents to reproduce cluster-specific annotations.",
+    "categories": ["cs.CL", "cs.CY", "cs.LG"],
+    "reasonCode": "BIAS_SEXISM_FAIRNESS"
+  },
+  {
+    "title": "Pun Intended: Multi-Agent Translation of Wordplay with Contrastive Learning and Phonetic-Semantic Embeddings",
+    "abstract": "Translating wordplay across languages challenges professional translators and machine translation systems. We translate puns from English to French and evaluate candidate translations.",
+    "categories": ["cs.CL"],
+    "reasonCode": "LANGUAGE_TRANSLATION"
+  }
+]
