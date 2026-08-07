@@ -1,0 +1,1335 @@
+{
+  "schemaVersion": "1.0",
+  "reportDate": "2026-08-07",
+  "generatedAt": "2026-08-07T04:05:05.622Z",
+  "releaseStatus": "complete",
+  "selectionPolicy": {
+    "source": "arxiv-rss",
+    "timeZone": "America/New_York",
+    "dateField": "item.pubDate",
+    "includedAnnouncementTypes": [
+      "new",
+      "cross"
+    ],
+    "excludedAnnouncementTypes": [
+      "replace",
+      "replace-cross",
+      "unknown"
+    ],
+    "strictSameDay": true,
+    "maxPerDomain": 3,
+    "hardExcludedTopicsEnabled": true,
+    "excludedTopicPolicyVersion": "safety-security-attack-defense-v1+cloud-computing-v1+bias-fairness-v1+language-translation-v1"
+  },
+  "exclusionSummary": {
+    "totalExcluded": 38,
+    "byReason": {
+      "DEFENSE_MITIGATION": 9,
+      "BIAS_SEXISM_FAIRNESS": 7,
+      "AI_SAFETY_ALIGNMENT": 6,
+      "SECURITY_CYBERSECURITY": 19,
+      "LANGUAGE_TRANSLATION": 2,
+      "JAILBREAK_PROMPT_INJECTION": 5,
+      "ATTACK_ADVERSARIAL": 5
+    },
+    "byPolicy": {
+      "safetySecurity": 30,
+      "cloudComputing": 0,
+      "biasFairness": 7,
+      "languageTranslation": 2
+    }
+  },
+  "domains": [
+    {
+      "id": "agent",
+      "name": "AI Agents",
+      "description": "Autonomous and interactive language-model agents, including planning, tool use, memory, and multi-agent systems.",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.LG",
+        "cs.MA",
+        "cs.HC"
+      ],
+      "keywords": [
+        "agent",
+        "agentic",
+        "multi-agent",
+        "tool use",
+        "tool-use",
+        "function calling",
+        "planning",
+        "reasoning",
+        "memory",
+        "computer use",
+        "web agent",
+        "language model agent"
+      ],
+      "negativeKeywords": [
+        "reagent",
+        "chemical agent",
+        "contrast agent"
+      ],
+      "maxPapers": 3
+    },
+    {
+      "id": "embodied-vla",
+      "name": "Embodied VLA and Action Models",
+      "description": "Vision-language-action models, robot foundation models, and learned policies for embodied control.",
+      "categories": [
+        "cs.RO",
+        "cs.CV",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "keywords": [
+        "vision-language-action",
+        "vision language action",
+        "vla",
+        "action model",
+        "robot policy",
+        "robot learning",
+        "embodied ai",
+        "embodied agent",
+        "manipulation",
+        "imitation learning",
+        "world model",
+        "diffusion policy"
+      ],
+      "negativeKeywords": [
+        "human action recognition",
+        "legal action"
+      ],
+      "maxPapers": 3
+    },
+    {
+      "id": "architecture-design",
+      "name": "Neural Architecture Design",
+      "description": "Design and analysis of efficient, scalable neural architectures and foundation-model components.",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL",
+        "cs.CV",
+        "stat.ML"
+      ],
+      "keywords": [
+        "architecture",
+        "transformer",
+        "state space model",
+        "mixture of experts",
+        "attention",
+        "token mixer",
+        "neural architecture search",
+        "model design",
+        "scaling law",
+        "sparse model",
+        "efficient inference",
+        "long context"
+      ],
+      "negativeKeywords": [
+        "building architecture",
+        "software architecture",
+        "system architecture"
+      ],
+      "maxPapers": 3
+    }
+  ],
+  "papers": [
+    {
+      "paper": {
+        "arxivId": "2608.05151",
+        "baseArxivId": "2608.05151",
+        "title": "Simulator-Grounded Large Language Models for Industrial Causal Reasoning: Tool-Use, Structured Injection, and Plant-Portable Retrieval for Wastewater Treatment Decision Support",
+        "abstract": "Abstract: Wastewater operators need answers grounded in how their plant's variables interact and how fast effects propagate, not in generic pretraining text, when asking causal questions such as \"why is N2O rising?\" or \"what happens if I cut aeration by 20%?\". We compare three concrete ways to ground a frozen Qwen2.5-32B-Instruct model in an architecturally interpretable wastewater simulator (CCSS-IX): a live simulator oracle (Method 1), structured parameter injection (Method 2), and a Decoupled Recall-Reasoning (DRR) retriever (Method 3). On a 198-question causal benchmark the three reach 99.5%, 79%, and 75.8%, forming a deployment ladder above the strongest retrieval-augmented baseline at 48%. The DRR retriever has 110M parameters and trains per plant in ~17 seconds; after cross-plant transfer to a biologically distinct plant it still reaches 88%, while Method 2's static table cannot transfer. On a 60-question counterfactual benchmark only Method 3 handles queries about what happens after an intervention: +16.3 pp over Method 2, paired 95% CI [+7.1, +26.4] pp, with 100% on the timescale and operating-regime categories. On the AI2 Reasoning Challenge (ARC) with an OpenBookQA fact corpus, the same selective-retrieval mechanism reaches 79% versus unconstrained Llama-3.1-8B 76% and full-injection 74%, a +3 pp out-of-domain replication that argues against a result specific to wastewater treatment. We provide the first single-simulator comparison of live tool-use, static parameter injection, and learned numerical-parameter retrieval for industrial causal question answering.",
+        "authors": [
+          {
+            "name": "Gary Simethy"
+          },
+          {
+            "name": "Daniel Ortiz Arroyo"
+          },
+          {
+            "name": "Petar Durdevic"
+          }
+        ],
+        "categories": [
+          "cs.CL",
+          "cs.AI"
+        ],
+        "primaryCategory": "cs.CL",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.05151",
+        "pdfUrl": "https://arxiv.org/pdf/2608.05151",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "agent",
+        "total": 26.5,
+        "breakdown": {
+          "category": 5.5,
+          "titleKeyword": 9,
+          "abstractKeyword": 3,
+          "phrase": 3,
+          "novelty": 1,
+          "experimentalRigor": 2,
+          "resultEvidence": 1,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "reasoning",
+          "tool use",
+          "tool-use"
+        ],
+        "matchedCategories": [
+          "cs.AI",
+          "cs.CL"
+        ],
+        "explanation": [
+          "primary category cs.CL (+4)",
+          "title keywords reasoning, tool use, tool-use (+9)",
+          "abstract keywords reasoning, tool use, tool-use (+3)",
+          "multi-word phrase bonus (+3)",
+          "novelty evidence (+1)",
+          "experimental rigor evidence (+2)",
+          "quantitative result evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "在冻结 Qwen2.5-32B-Instruct 上，对比三种将 LLM 锚定于可解释污水模拟器 CCSS-IX 的工业因果问答方案：实时工具调用、结构化参数注入与 DRR 选择性检索。",
+        "motivation": [
+          "污水厂操作员需回答“为何 N2O 上升”“曝气减 20% 会怎样”等因果问题，答案须基于该厂变量耦合与效应传播时标，而非通用预训练文本的统计关联。",
+          "领域监督微调（SFT）存在记忆–推理权衡：提升机制事实回忆，却削弱对这些事实的组合推理能力；本文在 198 题基准上复现该现象。",
+          "当存在架构可解释的厂级模拟器时，推理期锚定模拟器输出，优于将模拟器知识参数化吸收进模型权重。",
+          "现有 LLM 时序/工业方法多建模传感器统计关联，未编码“何变量驱动何变量、何工况、何时间尺度、反事实干预后果”等因果过程结构。"
+        ],
+        "method": [
+          "Method 1（实时模拟器 Oracle）：冻结 LLM，推理时通过 CCSS-IX 五个函数调用工具获取 regime 后验、耦合矩阵 W_k、时标 τ、CII 等机制输出。",
+          "Method 2（结构化参数注入）：离线从模拟器提取静态参数库（W_k、τ、阈值等），按问题手工选取子集前缀注入提示，无需运行时模拟器或检索训练。",
+          "Method 3（DRR，解耦回忆–推理）：训练约 110M 参数的 sentence-transformer 双编码检索器，从蒙特卡洛合成 (问题, 参数集) 对中学习问题–参数映射；因果边/异常题用规则图遍历，其余用语义检索的混合路由。",
+          "反事实查询由检索器解析干预并调用 run_counterfactual 获取干预后参数，再注入冻结 LLM；静态参数库方法（Method 2）按设计无法处理。",
+          "三种模式共享同一 CCSS-IX 后端、同一冻结基座模型与同一 198 题因果基准，差异可归因于锚定方式本身。"
+        ],
+        "experimentSetup": [
+          "Avedøre 污水厂 198 题因果问答基准，覆盖因果边、工况、多跳、异常、反事实、早期预警六类；最强静态语料 RAG 基线 48.0%。",
+          "60 题反事实基准 Cf-Bench：15 组控制干预（O2.SETPOINT、VALVE.PCT，±10%–±50%）× 4 种问法（Top Edge/Direction/Tau/Regime），干预持续 200 分钟。",
+          "跨厂迁移：生物学差异显著的 Agtrup BNR 厂 40 题；DRR 用 40 金标 + 76 合成题训练检索器，198 题基准held-out 不参与 DRR 训练。",
+          "域外验证：ARC 400 题（200 Easy / 200 Challenge），OpenBookQA 作知识库，读者换为 Llama-3.1-8B-Instruct，对比无注入、全量注入（1326 条）与 selective top-3 检索。",
+          "评估采用确定性关键词打分器为主指标，辅以 LLM-as-judge 语义层；25 例分歧中 24 例经人工裁定属判决抽取失败。"
+        ],
+        "results": [
+          "198 题因果基准：Method 1 197/198（99.5%），Method 2 156/198（79%），Method 3 Hybrid 150/198（75.8%），均显著高于静态 RAG 48%；Method 2 因果边与工况类分别达 100% 与 97%。",
+          "Cf-Bench 60 题：仅 Method 1 与 Method 3 可答干预后参数问题；Method 3 相对 Method 2 +16.3 pp，配对 95% CI [+7.1, +26.4] pp，时标与工况类准确率 100%。",
+          "跨厂 Agtrup：DRR 达 35/40（88%）；Method 2 静态表无法迁移至新厂。",
+          "ARC 域外：selective DRR 79%（316/400），无约束基座 76%，全量注入 74%；Easy 召回 87% vs 82%，Challenge 推理 71% vs 66%。",
+          "学习检索器 held-out top-25 召回率 0.87（规则基线 0.79）；将 198 题加入训练仅将召回提至 0.90，下游准确率 149/198，与 held-out 150/198 在 bootstrap 噪声内。"
+        ],
+        "trainingResources": [
+          "基座：Qwen2.5-32B-Instruct 冻结，4-bit NF4 量化；Mode 0 语料微调采用 QLoRA（rank=16, α=32），耗时 13.6 h，论文未披露该阶段所用 GPU 型号。",
+          "DRR 检索器：约 110M 参数，10 epoch、batch 16、warmup 50 steps；Avedøre 98 合成题训练墙钟约 17 s，Agtrup 116 题约 26 s。",
+          "上述 DRR 训练均在单卡 NVIDIA RTX PRO 6000 Blackwell（96 GB）上完成；Method 1/2/3 单题延迟分别为 9.0 s、3 s、3 s（同硬件）。",
+          "ARC 实验读者为 Llama-3.1-8B-Instruct；语义评判使用 DeepSeek-R1-Distill-Qwen-14B，论文未披露其推理硬件与 batch 配置。",
+          "CCSS-IX 模拟器本身训练成本与 Avedøre 数据集（906,000 步、16 变量、2 分钟分辨率）的拟合资源，论文未披露。"
+        ],
+        "limitations": [
+          "Method 2 静态参数库无法提供干预后参数，反事实问答仅 Method 1/3 可架构性支持。",
+          "Method 1 需运行时模拟器与具备工具调用能力的 LLM，部署门槛最高，适用于受监督控制室等高风险场景。",
+          "Method 3 在静态因果 QA 上略低于 Method 2（75.8% vs 79%），换取跨厂可迁移与反事实能力。",
+          "金标答案源自 CCSS-IX 输出，虽评分器独立于 LLM，评估仍与模拟器假设绑定；语义评判层存在判决 token 抽取失败。",
+          "全量参数注入（ARC 74%）劣于 selective 检索（79%），提示无关上下文稀释会损害领域推理。"
+        ],
+        "significance": "首次在单一模拟器与单一基座模型下，系统对比实时工具调用、静态参数注入与学习数值参数检索三种工业因果 QA 锚定路径，提出按空隔隔离、模拟器可用性与反事实需求选择的部署阶梯，而非仅按准确率排序；DRR 在秒级 per-plant 训练成本下实现跨厂迁移与域外 ARC 复现（+3 pp），表明 selective 检索效应非污水领域特例。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:04:39.590Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.06057",
+        "baseArxivId": "2608.06057",
+        "title": "When History Lies: Evaluating and Improving Tool Use under Misleading Multi-Turn Histories",
+        "abstract": "Abstract: Tool-calling agents infer task state from accumulated dialogue and tool traces. In persistent interactions, however, historical traces may remain structurally valid and semantically plausible after they cease to be authoritative for the current request. We show that such history can hijack a policy the model already possesses: on Qwen3-1.7B, pollution flips 32.1% of decisions that are correct under the original trajectory and frequently induces reuse of corrupted entities or interface conventions. We introduce bench, a paired benchmark with synchronized Original, Polluted, and Oracle State views that preserve the system policy, current tools, latest request, and gold next action. Eleven gold-preserving interventions isolate failures in decision state, entity binding, and interface execution across complete calls and non-call decisions. We further propose ours, which transfers an Oracle-conditioned teacher policy to a student observing only polluted history through soft supervision on student-generated prefixes. On Qwen3-1.7B, ours achieves 87.0% Balanced Tool-Use Accuracy, outperforming Gold-SFT (66.3%), Oracle sequence distillation (82.3%), and off-policy token distillation (85.0%). The method scales consistently: an 8B teacher raises the same compact 1.7B student to 91.9%, while an 8B student reaches 93.0%. The resulting policies further transfer to clean histories, unseen functions, independently regenerated evaluation contexts, external tool-use benchmarks, and noisy multi-hop question answering. These results establish history reliability as a distinct tool-use bottleneck and demonstrate reliable-state policy transfer as an effective and scalable solution.",
+        "authors": [
+          {
+            "name": "Xiaoqing Wu"
+          },
+          {
+            "name": "Xingyu Fan"
+          },
+          {
+            "name": "Feifei Li"
+          },
+          {
+            "name": "Wenhui Que"
+          }
+        ],
+        "categories": [
+          "cs.AI"
+        ],
+        "primaryCategory": "cs.AI",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.06057",
+        "pdfUrl": "https://arxiv.org/pdf/2608.06057",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "agent",
+        "total": 22,
+        "breakdown": {
+          "category": 4,
+          "titleKeyword": 6,
+          "abstractKeyword": 2,
+          "phrase": 3,
+          "novelty": 1,
+          "experimentalRigor": 2,
+          "resultEvidence": 2,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "tool use",
+          "tool-use"
+        ],
+        "matchedCategories": [
+          "cs.AI"
+        ],
+        "explanation": [
+          "primary category cs.AI (+4)",
+          "title keywords tool use, tool-use (+6)",
+          "abstract keywords tool use, tool-use (+2)",
+          "multi-word phrase bonus (+3)",
+          "novelty evidence (+1)",
+          "experimental rigor evidence (+2)",
+          "quantitative result evidence (+2)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "提出ContextPollute-Bench诊断多轮误导历史对工具调用的“策略劫持”，并以Oracle-OPD将Oracle条件教师可靠状态策略蒸馏到仅见污染历史的学生模型，显著提升Qwen3工具使用平衡准确率并泛化至干净历史与外部基准。",
+        "motivation": [
+          "持久交互中，历史工具轨迹在结构上仍有效、语义上仍可信，却可能已不再对当前请求具有权威性，从而误导下一步决策。",
+          "在Qwen3-1.7B上，插入污染历史会使原本在原始轨迹下正确的决策有32.1%被翻转，并常诱发复用错误实体或接口约定。",
+          "现有工具使用基准难以区分“模型缺乏策略”与“模型具备策略但被误导历史劫持”两类失败，因当前请求、可用工具与金标动作往往未被固定隔离。",
+          "仅靠提示词要求忽略失败或无关历史几乎无效（BTA仅从0.4720升至0.4849），说明需要学习性方法识别哪段历史状态仍具权威性。"
+        ],
+        "method": [
+          "构建ContextPollute-Bench：每条样本含同步的Original、Polluted与Oracle State三视图，共享系统策略、当前工具、最新请求与金标下一动作；11种金标保持干预覆盖决策状态、实体绑定与接口执行。",
+          "基准数据源自APIGen-MT的航空与零售域；Call正确性要求完整金标工具与参数，Answer正确性要求澄清、基于证据回答或识别工具不足。",
+          "提出Oracle-OPD：冻结的Oracle条件教师对仅观察Polluted上下文的学生在其自生成前缀上进行软监督（on-policy distillation），部署时仅需学生与普通历史。",
+          "方法三要素：Oracle State作为可靠教师视图、分布级软监督而非单序列硬标签、直接覆盖学生访问前缀以完成策略迁移。"
+        ],
+        "experimentSetup": [
+          "主评测在ContextPollute-Bench Test-Indist上进行，含Polluted/Original输入及600例仅Call、含6个训练未见工具的OOD-600。",
+          "对比基线包括M0 Polluted、Gold-SFT及其重采样/序列归一化/DPO变体、CALL-only SFT、Oracle-SeqKD、off-policy OD与多种因子化消融配置。",
+          "主要模型为Qwen3-1.7B与8B；固定Table 3所选checkpoint做跨视图、跨生成器（Claude-Opus-4.7独立再生624例）与外部基准评估。",
+          "外部评测含BFCL v4 Non-Live、When2Call，以及HotpotQA-Distractor全7405例验证集零样本噪声鲁棒性（temperature 0，64 token上限）。"
+        ],
+        "results": [
+          "Qwen3-1.7B上Oracle-OPD达BTA 87.03%（TCR 91.32%，非调用召回1−OCR 82.73%），优于Gold-SFT 66.28%、Oracle-SeqKD 82.29%、off-policy OD 84.99%；相对off-policy OD提升+2.04 BTA（95% CI [+1.18,+2.95]，p<10⁻⁴）。",
+          "8B教师将同一1.7B学生提升至BTA 91.93%（OOD TCR 75.00%）；8B学生Oracle-OPD（Oracle-SFT教师）达BTA 93.01%/Original 92.60%。",
+          "迁移至Original干净历史：1.7B Oracle-OPD BTA 84.50%，OOD TCR在Polluted/Original间基本不变（74.33% vs 74.50%）；八类Call侧干预算子宏平均TCR达91.3%。",
+          "跨生成器评估（624例）下1.7B Oracle-OPD仍最强（BTA 81.35%）；外部基准上8B教师1.7B学生BFCL 80.45、When2Call Macro-F1 0.3294，幻觉式工具调用率降至0.3411。",
+          "HotpotQA噪声上下文下，8B教师蒸馏的1.7B学生Noisy F1 0.5015，较次优训练checkpoint高+2.97 F1，clean-to-noisy F1差距最小为0.1596。"
+        ],
+        "trainingResources": [
+          "已披露：单节点8×NVIDIA H20（每卡96 GB HBM）；TencentOS Server 4、Linux 6.6、Python 3.11；PyTorch/CUDA全参数FSDP；训练框架verl 0.7.0（Ray分布式蒸馏）与torchrun FSDP（SFT）；rollout/评测用vLLM（1.7B TP=1，8B TP=8）；DPO用TRL DPOTrainer；1.7B用fp32、8B用bf16训练。",
+          "已披露：训练数据来自APIGen-MT航空/零售域构造的ContextPollute-Bench；训练期使用Oracle State与on-policy rollout，部署仅需蒸馏学生。",
+          "论文未披露：总训练时长、epoch数、全局batch size、学习率、优化器细节及每方法具体GPU小时消耗。"
+        ],
+        "limitations": [
+          "ContextPollute-Bench聚焦航空与零售域上的受控下一步动作干预，尚未覆盖真实生产历史与端到端长交互。",
+          "Oracle-OPD训练依赖Oracle State特权信息与on-policy rollout，虽部署不需Oracle或教师，但训练管线复杂度高于纯SFT。",
+          "污染干预虽经200例聚焦审计与1000例分层交叉审计，但仍为合成/半合成历史，自然发生误导模式的覆盖面有限。",
+          "方法主要在Qwen3系列上验证，对其他模型族与更大规模API/toolkit场景的普适性仍需更多证据。"
+        ],
+        "significance": "论文将“历史可靠性”确立为与任务变化、错误修复、指令注入不同的独立工具使用瓶颈，并提供可测量的三视图诊断框架；Oracle-OPD展示的可靠状态策略迁移在污染与干净历史、未见函数、独立生成上下文、外部工具基准及噪声多跳问答上均有效，为部署级紧凑模型提供可扩展的鲁棒工具调用训练路径。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:04:39.590Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.05956",
+        "baseArxivId": "2608.05956",
+        "title": "Certifying Collective Reasoning in Multi-Agent Systems via Koopman Spectral Analysis",
+        "abstract": "Abstract: Orchestrated collectives of large language model (LLM) agents that debate and vote are an emerging form of computational intelligence: the intelligent behaviour resides in the \\emph{interaction}, not in any single agent. They improve task accuracy, yet remain black boxes at the system level: there is no principled test of convergence, no bound on the rounds needed, and no faithful account of what drove a decision. This paper develops a novel framework based on Koopman operator theory and validates its theoretical guarantees on multi-agent consensus dynamics. Treating the collective as one nonlinear dynamical system on a communication graph, we read its essential behaviour off the spectrum of its Koopman transfer operator, an exact linear representation of the nonlinear dynamics estimated from interaction traces. The spectrum yields three machine-checkable certificates: the sub-dominant eigenvalue $\\lambda_2$ fixes the intrinsic timescale of reasoning and yields a convergence deadline computable \\emph{before} the debate runs; its eigenvector names the coherent factions the collective reasons in, and $|\\lambda_2|$ certifies when that explanation is valid; and the leading spectral coordinates form a compressed, auditable message basis. On an attention-consensus model, the deadline tracks observed convergence with log--log correlation $0.93$ and bounds it in 96\\% of 24 configurations; attribution is exact whenever the spectrum certifies metastability; eight of 32 coordinates preserve the decision at 99.7\\% fidelity; and a certificate learned from 15 debates held on 60/60 held-out debates. The study runs in minutes on a CPU, making spectral certification a practical layer for trustworthy collective reasoning.",
+        "authors": [
+          {
+            "name": "Nuzhat Khan"
+          },
+          {
+            "name": "Indrakshi Dey"
+          }
+        ],
+        "categories": [
+          "cs.MA",
+          "cs.SY",
+          "eess.SY"
+        ],
+        "primaryCategory": "cs.MA",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.05956",
+        "pdfUrl": "https://arxiv.org/pdf/2608.05956",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "agent",
+        "total": 21.5,
+        "breakdown": {
+          "category": 4,
+          "titleKeyword": 9,
+          "abstractKeyword": 3,
+          "phrase": 1.5,
+          "novelty": 1,
+          "experimentalRigor": 0,
+          "resultEvidence": 1,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "agent",
+          "multi-agent",
+          "reasoning"
+        ],
+        "matchedCategories": [
+          "cs.MA"
+        ],
+        "explanation": [
+          "primary category cs.MA (+4)",
+          "title keywords agent, multi-agent, reasoning (+9)",
+          "abstract keywords agent, multi-agent, reasoning (+3)",
+          "multi-word phrase bonus (+1.5)",
+          "novelty evidence (+1)",
+          "quantitative result evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "基于 Koopman 算子谱分析，从多智能体交互轨迹估计转移算子，为集体推理提供可机器检验的收敛截止期、派系归因与消息压缩三类证书。",
+        "motivation": [
+          "多智能体 LLM 辩论/投票系统虽提升任务准确率，但系统层面仍是黑箱：缺乏收敛性检验、轮次上界与对集体决策驱动力的可信解释。",
+          "部署场景需回答三类问题：该集体能否收敛（Q1）、需多少轮辩论（Q2）、最终答案由何种结构驱动（Q3），现有固定轮次、多数投票或字符串一致等停止规则无法建模辩论动力学。",
+          "单个智能体的 chain-of-thought 叙述常不忠实于实际计算，且无法解释集体交互过程；需要系统级、可验证语义的解释框架。",
+          "经典图谱共识理论依赖已知线性更新律，而注意力耦合使真实推理时间尺度与固定图拓扑解耦，无法直接用于 LLM 集体。"
+        ],
+        "method": [
+          "将多智能体集体视为通信图上的非线性离散动力系统，用 extended dynamic mode decomposition（EDMD）从交互快照对估计 Koopman 转移算子，实现非线性动力学的精确线性表示。",
+          "谱分析产出三类可机器检验证书：次主特征值 λ₂ 确定推理内在时间尺度与可预先计算的收敛截止期；其特征向量命名一致派系，|λ₂| 自证归因有效性； leading spectral coordinates 构成可审计压缩消息基。",
+          "构建 attention-consensus 语义辩论参考模型，隔离 softmax 相似度门控影响与图约束通信两种使 LLM 集体动力学非平凡的关键机制。",
+          "估计前对集体状态做中心化以去除共识流形上的平凡单位特征值；采用通用随机特征字典与 ridge 回归闭式求解，打包为仅需交互轨迹输入的 Algorithm 1 认证流水线。"
+        ],
+        "experimentSetup": [
+          "在可控但 genuinely nonlinear 的 attention-consensus 参考模型上验证，信念嵌入维度 d=8，最大规模 N=32 智能体、字典规模 P≈320。",
+          "收敛截止期实验覆盖 24 种集体配置（不同拓扑、注意力温度、团队规模）；共 60 次运行用于归因、压缩与端到端泛化评估。",
+          "planted two-faction 基准对比 k-means 与 Fiedler 分区等静态基线；并与图谱共识理论、衰减曲线拟合、固定五轮预算三类方法比较。",
+          "端到端泛化：15 次训练辩论学习证书，在 60 次 held-out 问答辩论上测试；代码、轨迹与结果全文公开。"
+        ],
+        "results": [
+          "截止期证书：对数–对数相关 r=0.93，96%（24 配置中 23 个）配置中为观测收敛的安全上界，中位保守系数 2.0×；相对基线 Koopman 同时最预测（r=0.94）且 100% 覆盖，图谱理论 r=0.75 且半数违反上界，衰减曲线拟合 r=0.87 但 58% 配置低估截止期，固定五轮仅覆盖 4% 配置。",
+          "谱估计误差随样本量 M 以 ≈M⁻⁰·³⁶ 衰减；几何衰减形式经验拟合 R²=0.998。",
+          "派系归因：当 |λ₂|>0.9 且谱证 metastability 时（42/60 次运行），100% 恢复 latent factions；|λ₂| 与归因有效性相关 0.92；静态基线在派系已合并时仍输出错误分区而无失效信号。",
+          "消息压缩：32 维中保留 8 个谱坐标（4× 带宽缩减）决策保真度 99.7%（0.996），随机投影同带宽为 97.9%（0.979），保真损失约五分之一。",
+          "端到端 held-out：15 次训练辩论所学证书在 60/60 次 held-out 问答辩论上成立。"
+        ],
+        "trainingResources": [
+          "全部实验在 CPU 上运行，总耗时不足 20 分钟；单次认证为 ridge 回归加特征分解，复杂度 O(P²S+P³)，最大配置（N=32, d=8, P≈320）远小于 1 秒。",
+          "未使用真实 LLM 推理或模型权重；实验基于 attention-consensus 仿真器生成的交互轨迹，论文未披露具体 CPU 型号与内存配置。",
+          "数据需求：约 10 条轨迹即可将 |λ₂| 估计至几个百分点内；端到端证书仅需 15 次训练辩论。"
+        ],
+        "limitations": [
+          "验证限于 attention-consensus 参考模型，尚未在真实 LLM 集体辩论轨迹上系统检验；live LLM collectives 列为首要未来方向。",
+          "截止期上界在 4% 配置中失效；中位 2.0× 保守性表明有限样本谱理论（目标 |λ̂₂−λ₂|≲κM_eff⁻¹/²）尚未推导，归因阈值与 near-unit 拒绝带为经验校准。",
+          "当归因失效（谱隙过大）或估计特征值进入 near-unit 拒绝带时，框架主动拒绝出具证书。",
+          "未覆盖有向、角色异质（planner/critic 等）集体及策略性/故障智能体下的鲁棒证书；复杂系统可能需 learned dictionary 超越随机特征字典。"
+        ],
+        "significance": "将多智能体集体推理的三类开放问题（收敛、截止期、结构解释）转化为可由交互轨迹谱对象计算的证书，为 LLM 集体与自主多智能体网络提供无需访问模型内部参数的黑箱可信认证层，并连接数据驱动算子理论与机器社会动力学。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:04:39.590Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.05970",
+        "baseArxivId": "2608.05970",
+        "title": "SkillMemo: Expert-guided Skill Memory Framework for Compositional Embodied Manipulation",
+        "abstract": "Abstract: Embodied visuomotor models, including Diffusion Policy (DP) and Vision-Language-Action (VLA) models, have demonstrated promising performance on robotic manipulation benchmarks. However, their potential remains fundamentally constrained by the scarcity of large-scale embodied trajectory datasets, leading to insufficient compositional generalization in out-of-distribution (OOD) scenarios with limited capability to capture reusable skill structures. To address this limitation, we propose Skill-Based Memory (SkillMemo) framework that implicitly decomposes long-horizon demonstrations into latent atomic skills and integrates skill-level features into a dynamic episodic memory bank for solving compositional tasks. Specifically, we first introduce an expert-guided trajectory segmentation module built upon a Mixture-of-Experts (MoE) architecture, which implicitly partitions trajectories into distinct skill primitives represented by learned gating coefficients. We further design a skill-level episodic memory architecture that stores compact skill representations as retrievable key-value pairs. During inference, the memory bank retrieves the most relevant skill primitives which are subsequently fused with the model's current gating distribution, providing a robust contextual prior to refine action predictions. Extensive experiments on the simulation benchmark and real-world manipulation tasks demonstrate that SkillMemo consistently enhances both DP and VLA backbones, achieving state-of-the-art performance and outperforming $\\pi_{0.5}$, while exhibiting strong compositional generalization to unseen task configurations.",
+        "authors": [
+          {
+            "name": "Changyuan Wang"
+          },
+          {
+            "name": "Chubin Zhang"
+          },
+          {
+            "name": "Zhenyu Wu"
+          },
+          {
+            "name": "Runhao Li"
+          },
+          {
+            "name": "Angyuan Ma"
+          },
+          {
+            "name": "Ke Chao"
+          },
+          {
+            "name": "Yinan Liang"
+          },
+          {
+            "name": "Xiuwei Xu"
+          },
+          {
+            "name": "Ziwei Wang"
+          },
+          {
+            "name": "Yansong Tang"
+          },
+          {
+            "name": "Jiwen Lu"
+          }
+        ],
+        "categories": [
+          "cs.RO",
+          "cs.AI"
+        ],
+        "primaryCategory": "cs.RO",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.05970",
+        "pdfUrl": "https://arxiv.org/pdf/2608.05970",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "embodied-vla",
+        "total": 24,
+        "breakdown": {
+          "category": 5.5,
+          "titleKeyword": 3,
+          "abstractKeyword": 5,
+          "phrase": 4.5,
+          "novelty": 2,
+          "experimentalRigor": 1,
+          "resultEvidence": 1,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "diffusion policy",
+          "manipulation",
+          "vision language action",
+          "vision-language-action",
+          "vla"
+        ],
+        "matchedCategories": [
+          "cs.AI",
+          "cs.RO"
+        ],
+        "explanation": [
+          "primary category cs.RO (+4)",
+          "title keywords manipulation (+3)",
+          "abstract keywords diffusion policy, manipulation, vision language action, vision-language-action, vla (+5)",
+          "multi-word phrase bonus (+4.5)",
+          "novelty evidence (+2)",
+          "experimental rigor evidence (+1)",
+          "quantitative result evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "SkillMemo 通过 MoE 隐式分解轨迹为原子技能，并以技能级情景记忆库存储与检索门控分布，增强 DP 与 VLA 在组合式具身操作中的 OOD 泛化。",
+        "motivation": [
+          "大规模具身轨迹数据稀缺，导致 Diffusion Policy 与 VLA 等 visuomotor 模型难以学习可复用的技能结构",
+          "在已知物体/容器/指令的新组合场景下，单体策略组合泛化不足，OOD 性能下降",
+          "现有记忆增强方法（如 MemoryVLA、HAMLET）多存储整体视觉-语义或时序 token，缺乏对行为显著技能级特征的显式记忆与复用机制"
+        ],
+        "method": [
+          "Expert-Guided Trajectory Segmentation（EGTS）：在 MoE 架构中用门控系数隐式划分轨迹为原子技能段，辅以 PID 协同信息损失、负载均衡与 top-k 路由促进专家分化",
+          "Skill-Level Memory Architecture（SLMA）：以技能段 latent 特征时序均值作 key、完整门控权重序列作 value，构建可检索的 key-value 记忆库",
+          "推理时以余弦相似度检索 top-N 技能，在可靠性阈值 δ 通过后，将检索门控与当前门控按 λ 加权融合以修正动作预测",
+          "有限容量记忆库采用动态剪枝：优先淘汰最旧、长期未检索或反复低于 δ 的低效用条目"
+        ],
+        "experimentSetup": [
+          "仿真 DP 骨干：在 Push-T、UR3 Block Push、Franka Kitchen 上对比 DP、SDP、CP、IMLE Policy、STEP 等基线",
+          "仿真 VLA 骨干：在 LIBERO（Goal/Spatial/Object/Long，7-DoF Franka Panda）上评测 UniACT-0.5B、UniVLA-7B、π₀.₅ 及 SkillMemo 增强版；统一策略训练 30k steps，每任务 50 次 rollout 报成功率",
+          "消融：逐步加入 EGTS 与 SLMA；专家数 N∈{1,2,3,5,8,10} 对比精度与推理时延",
+          "跨套件零样本：分别在 Goal/Spatial/Object 子集训练，直接在其他子集评估组合泛化",
+          "真实世界：UR5e + WSG-50 夹爪 + ORBBEC Femto Bolt 相机，5 项单任务各 50 条示教、40 次 rollout；另设未见物体-容器组合的组合泛化协议"
+        ],
+        "results": [
+          "DP+SkillMemo 三环境平均成功率 64.6%，较 DP 基线 61.2% 提升 3.4%；Push-T 55.2%、BlockPush 78.1%、Kitchen 60.6%",
+          "π₀.₅-SkillMemo 在 LIBERO 平均 98.0%，较 π₀.₅ 96.8% 提升 1.2%，较 MemoryVLA 96.5% 提升 1.5%；Goal/Spatial/Object/Long 分别为 99.0%/99.4%/98.2%/95.4%",
+          "UniAct-SkillMemo 平均 72.7%（基线 67.2%）；UniVLA-SkillMemo 平均 95.9%（基线 93.9%）",
+          "跨套件：Goal 训练模型在未见 Spatial 达 75.6%，高于在 Spatial 上训练的 in-distribution 基线 72.1%（+3.5%）",
+          "真实世界单任务：Corn in Pot 90.0% vs DP 82.5%（+7.5%），Butter in Pot 75.0% vs 62.5%（+12.5%）；组合泛化如 Strawberry on Plate 75.0% vs 65.0%",
+          "默认 N=5 专家；N=10 仅较 N=5 边际提升（如 UniAct Object 80.1% vs 79.3%），推理时间由 3.93s 增至 7.94s"
+        ],
+        "trainingResources": [
+          "仿真训练：8×NVIDIA A6000 GPU，每 GPU batch 32（全局 256），AdamW 学习率 2×10⁻⁵",
+          "LIBERO VLA 实验：遵循 π₀.₅ 设定，全任务统一策略训练 30k steps",
+          "MoE 默认 5 专家，记忆库容量 M_max=1000",
+          "真实世界：每任务 50 条 kinematic teaching 示教，部署于单台 7-DoF UR5e",
+          "论文未披露总训练时长、各骨干具体参数量级外的细粒度算力消耗及真实世界训练 GPU 配置"
+        ],
+        "limitations": [
+          "专家数增加带来精度收益递减：N=10 相对 N=5 提升有限但推理时延显著上升（7.94s vs 3.93s）",
+          "记忆库容量有限，需依赖剪枝策略，可能在 lifelong 场景下丢失远期或低频但有用的技能",
+          "检索融合依赖相似度阈值 δ 与超参 λ，低质量或不匹配检索可能被拒绝或引入噪声",
+          "论文未单独设置 limitations 章节，对极端 OOD、多机协作及更大规模记忆扩展等边界未作系统讨论"
+        ],
+        "significance": "SkillMemo 将 MoE 隐式技能发现与技能级情景记忆耦合，在仿真与真实 UR5e 任务上一致增强 DP/VLA 骨干，并在 LIBERO 上超越 π₀.₅ 等强基线，为有限示教下的组合式具身操作提供了可检索、可组合的技能记忆范式。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:04:54.513Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.05738",
+        "baseArxivId": "2608.05738",
+        "title": "In-Context VLA: Endowing Vision-Language-Action Models with Language via In-Context Post-Training and Agentic Tool Use",
+        "abstract": "Abstract: Vision-Language-Action (VLA) models have become the dominant recipe for generalist manipulation, yet they are almost universally trained by behavior cloning: a policy imitates expert action chunks conditioned on a static image and a fixed instruction. A natural remedy is to inject explicit reasoning through textual chain-of-thought (CoT). We show, both empirically and analytically, that free-form textual CoT degrades low-level control: the reasoning it produces is ungrounded, its latency breaks closed-loop timing, and, crucially, the reasoning and action tokens are optimized against conflicting objectives so that the policy learns to narrate rather than to act. We argue that what a VLA needs is not the ability to generate language, but the ability to consume grounded language. To this end we introduce \\textbf{\\ourmethod{}}, a framework that endows a VLA with language competence through (i) in-context post-training, in which perceptual evidence is injected as structured context and the model is supervised only on actions, and (ii) an agentic tool-use interface, in which the policy queries open-vocabulary detectors, monocular depth, and a vision--language model to actively acquire task-relevant information. Rather than emitting a single templated caption, our data engine produces diverse, paraphrased, and evidence-conditioned spatial descriptions, so that the policy learns to interpret language it has never seen verbatim. Across the RoboCasa-GR1, SimplerEnv, and LIBERO simulation benchmarks, together with 8 real-world robot manipulation tasks, our method consistently achieves SOTA results in both performance and efficiency when compared with CoT-based approaches under matched configurations.",
+        "authors": [
+          {
+            "name": "Jiarui Yang"
+          },
+          {
+            "name": "Wen Huang"
+          },
+          {
+            "name": "Jiale Zhang"
+          },
+          {
+            "name": "Maowei Hu"
+          },
+          {
+            "name": "Hang Guo"
+          }
+        ],
+        "categories": [
+          "cs.RO"
+        ],
+        "primaryCategory": "cs.RO",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.05738",
+        "pdfUrl": "https://arxiv.org/pdf/2608.05738",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "embodied-vla",
+        "total": 23,
+        "breakdown": {
+          "category": 4,
+          "titleKeyword": 9,
+          "abstractKeyword": 4,
+          "phrase": 3,
+          "novelty": 1,
+          "experimentalRigor": 0,
+          "resultEvidence": 0,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "manipulation",
+          "vision language action",
+          "vision-language-action",
+          "vla"
+        ],
+        "matchedCategories": [
+          "cs.RO"
+        ],
+        "explanation": [
+          "primary category cs.RO (+4)",
+          "title keywords vision language action, vision-language-action, vla (+9)",
+          "abstract keywords manipulation, vision language action, vision-language-action, vla (+4)",
+          "multi-word phrase bonus (+3)",
+          "novelty evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "VLA-Talker 通过上下文注入工具生成的 grounded 空间证据并仅监督动作，替代自由生成 CoT，在仿真与真实机器人上同时提升成功率、数据效率与推理效率。",
+        "motivation": [
+          "主流 VLA 依赖行为克隆，固定指令易被记忆而非理解，同义改写或未见表述会显著降成功率。",
+          "单帧前向观测无法主动补全缺失信息，策略只能凭像素隐式猜测目标位置。",
+          "自由文本 CoT 存在 grounding 缺口、语言与动作目标冲突及高延迟，策略易“叙述”而非“执行”低层控制。",
+          "人类操作依赖按需获取事实再行动，VLA 更需消费 grounded 语言而非生成长篇推理。"
+        ],
+        "method": [
+          "提出 VLA-Talker：将证据获取（开放词汇检测 GroundingDino、单目深度 DepthAnything、VLM 回退 Qwen2.5-VL-7B）与证据消费（VLA 策略）解耦。",
+          "上下文后训练：在关键帧将结构化感知证据注入 `<spatial>...</spatial>` 提示，仅对动作 token 监督，避免 rationale 生成与目标干扰。",
+          "数据引擎对同一几何事实生成坐标、相对偏移、深度比较等多表述 paraphrase，提升对未见措辞的鲁棒性。",
+          "两阶段训练：以 OpenVLA-OFT 为初始化做 in-context SFT，再以 GRPO（稀疏成功奖励、KL 锚定、M=16 组相对优势）对齐工具调用时机。",
+          "推理采用 initial/gripper-change/periodic 关键帧门控，在需要 re-grounding 的时刻注入证据而非每步生成 rationale。"
+        ],
+        "experimentSetup": [
+          "仿真基准：LIBERO 四套件（Spatial/Object/Goal/Long，每任务 50 随机初态）、RoboCasa-GR1（GR1 人形，报告 4 项代表 pick-place 及 24 任务均值）、SimplerEnv（WidowX，4 项 held-out 任务）。",
+          "真实评估：Agibot 人形平台 8 项桌面操作（pick-place、开闭、倾倒、插入等）。",
+          "统一配置：仅第三人称 RGB + 语言指令，无腕部相机；并行解码与 action chunking；与 Gen-CoT（相同证据但生成并监督 rationale）做 matched-evidence 对照。",
+          "数据效率实验：每任务演示数 {5,10,25,50}，同初始化重训 BC、Gen-CoT、VLA-Talker；泛化实验含未见物体类别与视觉干扰物。"
+        ],
+        "results": [
+          "LIBERO 四套件平均成功率 97.4%（Spatial 98.2、Object 99.2、Goal 98.4、Long 93.6），高于 Gen-CoT 96.2% 与 π0.5 96.9%；相较标准 BC 约提升近 10%。",
+          "RoboCasa-GR1 代表任务平均 59.5%，24 任务总体最优；Gen-CoT 仅 46.5%，ABot-M0 为 58.3%。",
+          "SimplerEnv 四任务平均亦为对比方法中最优（论文 Table 5，正文未给出逐项数值）。",
+          "数据效率：25 演示达 92.8%，超过 BC 在 50 演示下的 90.4%；5/10/25/50 演示下均优于 BC 与 Gen-CoT。",
+          "未见物体 85.1%、加干扰物 80.3%，显著高于 BC（54.8%/47.6%）与 Gen-CoT（52.1%/44.9%）；推理成本约为 CoT 的 1/4.6（Fig.1：SR 0.97 vs 0.88，cost 0.22 vs 1.00）。"
+        ],
+        "trainingResources": [
+          "已披露：全部实验使用 8×NVIDIA A100-80GB；in-context SFT batch=64、LR=1e-5，GRPO batch=128、LR=2e-6，AdamW，GRPO 默认 β=0.01、M=16。",
+          "已披露训练耗时（三仿真基准均值）：Gen-CoT SFT 19.5 h / 156 GPU-h；VLA-Talker in-context SFT 17.1 h / 137 GPU-h；GRPO 8.7 h / 70 GPU-h；VLA-Talker 合计约 25.8 h / 207 GPU-h。",
+          "已披露数据规模：LIBERO 1640 episodes / 9830 关键帧，RoboCasa-GR1 3120 / 27960，SimplerEnv 960 / 5230；每 tuple 平均 24 种表述，每 episode 注入 3.6–6.8 次。",
+          "论文未披露 OpenVLA-OFT 预训练总算力、真实机器人数据采集规模与单独训练 wall-clock；真实实验硬件细节见附录 Section B，正文未给出完整算力分解。"
+        ],
+        "limitations": [
+          "依赖现成感知工具（检测器、深度、VLM），OOD 场景或级联失败时错误证据会被策略忠实执行。",
+          "真实部署需相机内外参一次性标定以做 gripper 投影；仿真可直接获得精确外参。",
+          "关键帧注入调度为启发式 initial/gripper-change/periodic，尚未端到端学习何时请求新证据。",
+          "评估技能以 pick-place、开闭、倾倒、插入为主，未覆盖高灵巧度或接触丰富任务（如手中操作、可变形物体折叠）。",
+          "与多数基线相同，仅评估单指令单回合，未验证多轮交互指令跟随。"
+        ],
+        "significance": "从“生成推理”转向“消费 grounded 语言”，为 VLA 语言能力提供可分析、可解耦的新范式。；在 matched-evidence 设定下证明收益来自注入+仅动作监督而非证据本身，并系统性优于生成式 CoT。；同时改善成功率、数据效率、推理延迟与 run-to-run 方差，为工具增强、agentic VLA 提供可复现训练配方（in-context SFT + GRPO）。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:04:54.513Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.06374",
+        "baseArxivId": "2608.06374",
+        "title": "DyPES-VLA: Learning Shared Dynamics Priors and Embodiment-Specific Control for Cross-Embodiment Manipulation",
+        "abstract": "Abstract: Vision-Language-Action (VLA) models have become a powerful paradigm for robot manipulation, but training a single generalist policy for heterogeneous robot embodiments remains an open problem. Existing methods have two main limitations. First, they underuse dynamics priors shared across diverse visual and interaction data, limiting cross-embodiment transfer. Second, they require extensive manual preprocessing to convert embodiment-specific actions into a common format. To overcome these limitations, we propose DyPES-VLA, a cross-embodiment VLA that learns shared Dynamics Priors and Embodiment-Specific control. First, we learn shared dynamics priors by training the vision-language model (VLM) with a future-prediction objective on cross-embodiment data, driving the shared query representation to capture object motion, contact, and interaction-induced scene changes. Second, an embodiment-specific Mixture-of-Experts (MoE) action head translates these shared dynamics priors into executable controls directly in each embodiment's native action space, without manually pre-aligning heterogeneous actions into a common format. This head shares attention layers to capture common temporal action structures, while its embodiment-specific feed-forward experts resolve the unique kinematic constraints and control semantics of distinct embodiments. As a generalist policy, our \\ourmethod achieves state-of-the-art performance across simulation and real-world evaluations, reaching 98.0% success on LIBERO, 59.25% on RoboCasa-GR1, and 89.02% on RoboTwin~2.0.",
+        "authors": [
+          {
+            "name": "Junfeng Li"
+          },
+          {
+            "name": "Junjie He"
+          },
+          {
+            "name": "Zhide Zhong"
+          },
+          {
+            "name": "Yangyang Zheng"
+          },
+          {
+            "name": "Pingyue Sheng"
+          },
+          {
+            "name": "Jiayu Dong"
+          },
+          {
+            "name": "Ruixin Li"
+          },
+          {
+            "name": "Haodong Yan"
+          },
+          {
+            "name": "Jiaguan Zhu"
+          },
+          {
+            "name": "Tianran Zhang"
+          },
+          {
+            "name": "Runze Yu"
+          },
+          {
+            "name": "Wen Chen"
+          },
+          {
+            "name": "Liuqing Yang"
+          },
+          {
+            "name": "Yuxiang Gao"
+          },
+          {
+            "name": "Haoang Li"
+          }
+        ],
+        "categories": [
+          "cs.RO"
+        ],
+        "primaryCategory": "cs.RO",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.06374",
+        "pdfUrl": "https://arxiv.org/pdf/2608.06374",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "embodied-vla",
+        "total": 23,
+        "breakdown": {
+          "category": 4,
+          "titleKeyword": 6,
+          "abstractKeyword": 4,
+          "phrase": 3,
+          "novelty": 2,
+          "experimentalRigor": 1,
+          "resultEvidence": 1,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "manipulation",
+          "vision language action",
+          "vision-language-action",
+          "vla"
+        ],
+        "matchedCategories": [
+          "cs.RO"
+        ],
+        "explanation": [
+          "primary category cs.RO (+4)",
+          "title keywords manipulation, vla (+6)",
+          "abstract keywords manipulation, vision language action, vision-language-action, vla (+4)",
+          "multi-word phrase bonus (+3)",
+          "novelty evidence (+2)",
+          "experimental rigor evidence (+1)",
+          "quantitative result evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "DyPES-VLA 通过未来帧预测学习跨具身共享动力学先验，并以具身专属 MoE 动作头在原生动作空间生成控制，实现单 checkpoint 跨仿真与真实机器人泛化。",
+        "motivation": [
+          "现有跨具身 VLA 主要依赖动作预测监督，未能充分利用人/机操作视频中的物体运动、接触与场景演化等共享动力学规律。",
+          "许多方法需将异构控制手动映射到统一动作格式（坐标变换或逆运动学），难以扩展且混淆共享交互规律与具身专属控制语义。",
+          "训练单一通用策略以覆盖异构机器人形态仍是开放问题，现有策略多绑定特定机器人、跨具身迁移不足。"
+        ],
+        "method": [
+          "提出 DyPES-VLA：共享动力学先验（Dynamics Priors）+ 具身专属控制（Embodiment-Specific control）的跨具身学习范式。",
+          "阶段一：在跨具身、无动作标签的人/机视频上，用预训练 VLM、可学习 query token 与未来生成头做未来帧预测，使 query 表征编码物体运动、接触与交互致变。",
+          "阶段二：在多具身带动作标注演示上联合优化未来预测与动作目标；未来预测仅作共享表征正则，动作由专属头生成。",
+          "具身专属 MoE 动作头：共享注意力层建模通用时序动作结构，具身专属 FFN 专家直接输出各机器人原生动作 chunk，无需统一动作空间对齐。",
+          "输入含视觉观测、语言指令与具身 metadata；与 WAM 不同，未来预测仅用于学先验，动作生成交给独立具身头。"
+        ],
+        "experimentSetup": [
+          "仿真：单一 co-train checkpoint 在 LIBERO（7-DoF 单臂 Franka）、RoboCasa-GR1（29-DoF 人形 GR-1）、RoboTwin 2.0（14-DoF 双臂 ALOHA-AgileX）三基准评测，并与 per-benchmark specialist 及 single-checkpoint generalist 对比。",
+          "具身覆盖三类族：单臂（Franka Emika Panda / FR3）、双臂（ALOHA-AgileX / COBOT Magic）、人形（Fourier GR-1 / Unitree G1+Inspire RH56DFQ）。",
+          "真实部署：在仿真 checkpoint 基础上，对三桌面任务（放猕猴桃入篮、倒水入碗、书放上架）× 三真实机器人联合微调；每任务每具身 200 条遥操作演示。",
+          "真实评测：每任务每具身 25 次独立 rollout；对比 ACT（9 个独立 checkpoint，每任务每具身单独训练）与 GR00T-N1.6（预训练 checkpoint 联合微调）。"
+        ],
+        "results": [
+          "LIBERO 平均成功率 98.0%（Spatial 98.8%、Object 99.4%、Goal 97.0%、Long 96.8%），在 single-checkpoint generalist 中领先 Qwen-VLA（97.9%）0.1 点。",
+          "RoboCasa-GR1 平均成功率 59.25%（50 rollouts/任务），较 Qwen-VLA（56.7%）高 2.55 点，优于 GR00T-N1.6（47.6%）等 specialist。",
+          "RoboTwin 2.0 平均 89.02%（Clean 88.78%、Randomized 89.26%），略高于 ABot-M0（85.50%）与 Qwen-VLA（86.65%）。",
+          "真实世界九配置（3 任务×3 具身）平均成功率 75.6%，较 GR00T-N1.6（59.6%）高 16.0 点、较 ACT（32.4%）高 43.2 点。",
+          "消融：去掉未来预测目标 RoboTwin/RoboCasa-GR1 分别降 2.4/2.5 点；共享 dense 头替代 MoE 分别降 1.2/2.1 点；去掉 Stage-1 预训练三基准均下降。"
+        ],
+        "trainingResources": [
+          "两阶段训练：阶段一无动作视频做未来预测；阶段二多具身带标注演示联合未来预测与动作学习（论文未披露具体数据规模与来源清单）。",
+          "真实部署需每任务每具身 200 条遥操作演示做联合微调；仿真到真实复用 RoboTwin/RoboCasa 对应具身专家（FR3 与 LIBERO Franka 运动学相近）。",
+          "backbone 为预训练 VLM + 未来生成头 + 具身 MoE 动作头；论文未披露 GPU 数量、训练时长、参数量与 batch 等算力细节。"
+        ],
+        "limitations": [
+          "论文未设独立 limitations 章节；提供的实验主要覆盖三类具身族与有限桌面操作任务，泛化边界未系统讨论。",
+          "真实世界仍依赖仿真 co-train checkpoint 后的大规模 per-task per-embodiment 演示微调（200 条/配置），非零样本直接部署。",
+          "RoboTwin 2.0 上部分长 horizon/精细任务成功率仍偏低（如 Hanging Mug Clean 35%、Stack Blocks Three Clean 51%），表明困难交互尚未完全解决。",
+          "LIBERO 上 98.0% 仍略低于 per-benchmark 微调最优 X-VLA（98.1%），单 checkpoint 与专用微调间存在小幅差距。"
+        ],
+        "significance": "提出将共享交互动力学与具身专属控制解耦的跨具身 VLA 范式，避免统一动作空间的手工对齐；未来监督有效利用无动作视频，单 checkpoint 在三大仿真基准达 SOTA 并显著提升多形态真实机器人联合控制，为通用操作策略提供可迁移动力学先验基础。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:04:54.513Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.05326",
+        "baseArxivId": "2608.05326",
+        "title": "QEvict: Recoverable Quantized KV Eviction for Attention-Drift-Robust Long-Context Decoding",
+        "abstract": "Abstract: Autoregressive large language model inference is increasingly constrained by the memory footprint of the Key-Value (KV) cache. A dominant line of work reduces this footprint by evicting tokens that appear unimportant under attention-derived scores. However, such policies make an implicit irreversible decision: once a token is evicted, it cannot become useful again. We show that this assumption is brittle during decoding. Token and window importance drift as generated queries evolve, causing standard eviction policies to permanently discard states that later receive substantial attention under the full-cache model. To characterize this behaviour, we introduce Future Missed Mass and Global LIR, two diagnostics that measure future attention assigned to discarded states and the reactivation of historically inactive regions. We propose QEvict, a three-tier KV-cache management scheme that replaces binary retain-or-delete eviction with recoverable eviction. QEvict maintains high-confidence windows in full precision, stores intermediate windows in a quantized recoverable tier, and deletes only the lowest-confidence windows. During decoding, cumulative attention scores update window importance and when a quantized window becomes important again, it is dequantized and promoted to the full-precision. Under a fixed memory budget, this design preserves broader historical context while retaining exact full precision for the most important regions. Across long-context understanding, retrieval, and reasoning benchmarks, QEvict consistently improves over representative eviction and quantization baselines, reducing missed attention and improving information retention",
+        "authors": [
+          {
+            "name": "Ayushman Garg"
+          },
+          {
+            "name": "Akshita Gupta"
+          },
+          {
+            "name": "Shaswata Bhattacharya"
+          },
+          {
+            "name": "Abhishek Gupta"
+          },
+          {
+            "name": "Sandeep Kumar"
+          },
+          {
+            "name": "Manoj Kumar"
+          }
+        ],
+        "categories": [
+          "cs.LG",
+          "cs.CL"
+        ],
+        "primaryCategory": "cs.LG",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.05326",
+        "pdfUrl": "https://arxiv.org/pdf/2608.05326",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "architecture-design",
+        "total": 19,
+        "breakdown": {
+          "category": 5.5,
+          "titleKeyword": 6,
+          "abstractKeyword": 2,
+          "phrase": 1.5,
+          "novelty": 1,
+          "experimentalRigor": 0,
+          "resultEvidence": 1,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "attention",
+          "long context"
+        ],
+        "matchedCategories": [
+          "cs.CL",
+          "cs.LG"
+        ],
+        "explanation": [
+          "primary category cs.LG (+4)",
+          "title keywords attention, long context (+6)",
+          "abstract keywords attention, long context (+2)",
+          "multi-word phrase bonus (+1.5)",
+          "novelty evidence (+1)",
+          "quantitative result evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "QEvict 将 KV 缓存从不可逆逐出改为可恢复的三层窗口分级（全精度/INT2 量化/删除），在固定内存预算下缓解解码期注意力漂移导致的历史状态永久丢失。",
+        "motivation": [
+          "自回归 LLM 长上下文推理受 KV 缓存线性增长的内存占用制约，逐出策略虽能压缩但面临容量与质量权衡。",
+          "现有逐出方法隐含不可逆假设：一旦删除 token/window 便无法恢复，而解码过程中 query 演化会使 token 与窗口重要性发生漂移。",
+          "标准逐出会在低相关阶段永久丢弃后续在 Full-KV 下仍获大量注意力的状态，逐 token 选择还会破坏局部连贯证据。",
+          "纯量化方法保留更广历史但缺乏在全精度执行、可恢复低比特存储与永久删除之间的动态联合调度机制。"
+        ],
+        "method": [
+          "提出 Future Missed Mass、Global LIR 与 Selection Churn 诊断，量化被丢弃状态的未来注意力、历史非活跃窗口再激活及缓存分配不稳定。",
+          "QEvict 对连续历史窗口按累积注意力分层：高置信窗口保留全精度，中间窗口进入 INT2 可恢复层，最低置信窗口永久删除。",
+          "每 Ω=8 个生成 token 重路由；受保护 sink（5 tokens）与 recent 区始终全精度；历史预算中 q=0.70 分配给量化层。",
+          "窗口首次降级时做迁移稳定的不对称量化（keys 按通道、values 按 token），低比特表示持久复用；重要窗口可反量化并 Q→F 提升回全精度层。",
+          "实现兼容 GQA 与 FlashAttention-2，在路由步选择性 materialize SDPA 以计算累积注意力分数。"
+        ],
+        "experimentSetup": [
+          "在 LongBench（12 任务、4 类）、RULER 32K（13 任务、4 类）与 GSM8K 上评估，覆盖长上下文理解、受控检索/推理与多步自回归生成。",
+          "使用 Llama-3.1-8B-Instruct、Mistral-7B-Instruct-v0.2、Qwen2.5-7B-Instruct 三个指令微调模型；逐出基线含 StreamingLLM、SnapKV、AdaKV、CriticalKV、DefensiveKV、Layer-Def. KV，量化基线含 KIVI、ZipCache、KVQuant。",
+          "LongBench 逐出对比预算 ρ∈{5%,10%,20%}；RULER 32K 逐出对比 ρ=20%；GSM8K 逐出对比 ρ∈{10%,20%,40%,60%,80%,100%}；量化方法按实测内存工作点比较。",
+          "默认 QEvict 配置：Ω=8、5 sink tokens、INT2 可恢复层、q=0.70；GSM8K 为 recent 区预留 25% 总持久 KV 预算；LongBench 某任务存 128 recent tokens。",
+          "消融在 Llama-3.1-8B、5% KV 预算下，对窗口粒度 Ω∈{4,8,16,32}、量化层占比 q∈{0.10,…,0.90} 及可恢复精度做敏感性分析。"
+        ],
+        "results": [
+          "RULER 32K（Llama-3.1-8B，20% KV）：QEvict 聚合任务 43.98%，优于 SnapKV 14.56%、CriticalKV 26.80%、DefensiveKV 22.94%，接近 Full-KV 45.22%。",
+          "LongBench（Qwen2.5-7B，20% KV）：QEvict 在 MultiFieldQA 44.28、HotpotQA 49.15、Qasper 35.74 等多项上优于代表逐出基线（如 Layer-Def. KV MultiFieldQA 39.34）。",
+          "GSM8K（Llama-3.1-8B）：20% KV 下 QEvict 准确率 79.09%，远高于 SnapKV 4.09%、StreamingLLM 3.56%，Full-KV 为 86.93%；10% KV 下 QEvict 11.45% 仍显著优于多数逐出基线（约 1.9%–3.3%）。",
+          "启用 Q→F 提升后：R3 FMM 16.8%→16.1%，QSA 0.947→0.985，R_Q 88.7%→95.5%，Global LIR 0%→6.6%，观测 639 次 Q→F 迁移。",
+          "LongBench Pareto 分析显示 QEvict 在多数任务族与模型上相对逐出/量化基线占据更优的质量–内存权衡前沿。"
+        ],
+        "trainingResources": [
+          "本文为推理期 KV 缓存压缩方法，不涉及模型训练；训练算力、数据规模与训练时长均论文未披露。",
+          "推理实验使用三个现成指令微调模型，未披露 GPU 型号、数量或总推理/评测耗时。",
+          "论文将临时工作区排除在 KV 预算外，峰值 GPU 内存单独记录，但未给出具体硬件配置数值。"
+        ],
+        "limitations": [
+          "Q→F 提升的 pilot 对比使用不同源文章，只能作为方向性证据而非严格配对因果估计。",
+          "提升改善的是层级组成与策略级分数一致性，并不意味对固定窗口的反量化能消除量化误差。",
+          "方法依赖累积注意力等排序信号及窗口级路由，重要性估计与 Ω、q、量化精度选择仍带来设计敏感性。",
+          "需周期性重路由与选择性 SDPA 计算，引入额外推理调度开销；极低预算（如 GSM8K 10% KV）下性能仍明显低于 Full-KV。"
+        ],
+        "significance": "首次同时实现选择性逐出、低比特保留、窗口路由与动态可恢复，填补 residency 与数值精度联合管理的空白。；将 KV 压缩从一次性删除转为可降级、可恢复、可提升的动态过程，直接针对解码期注意力漂移这一被忽视失败模式。；在 LongBench、RULER、GSM8K 与三种 7B/8B 级模型上 consistently 改善质量–内存权衡，降低 Future Missed Mass 并提升信息保留。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:05:05.622Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.05872",
+        "baseArxivId": "2608.05872",
+        "title": "MACRO: Markov Chain Routing of Transformer Layers",
+        "abstract": "Abstract: Standard Large Language Models (LLMs) execute layers sequentially. Dynamic layer routing, i.e. search for a different execution path through layers involving layer repetitions, skips and other moves, can improve performance. Existing routing approaches often require updating model weights, running expensive search loops per test instance, or demand ground-truth labels during inference. In this work, we propose Markov Chain Routing of Transformer Layers (MACRO), a framework that learns task-specific routes over LLM architectures without modifying underlying parameters. MACRO models layer routing as a context-dependent Markov policy conditioned on layer indices, computation budget phases, directional displacements, and operator context, supporting skip, repeat, and residual hidden-state addition operations. The Markov route distribution is updated via feedback on training data and decoded using a top-k Viterbi algorithm to isolate high-probability candidate programs. We evaluate MACRO across diverse reasoning and knowledge benchmarks on multiple open-weight LLMs. MACRO achieves a +5.0% average accuracy improvement over the unrouted baselines, with largest gains on small models. We outperform the best dynamic routing approach Dr. LLM by +7.2%, while reducing route-search time 9.4x (from 14.8 to 1.6 hours). Our code is publicly available at https://github.com/Batorskq/MACRO.",
+        "authors": [
+          {
+            "name": "Pawe{\\l} Batorski"
+          },
+          {
+            "name": "Abtin Pourhadi"
+          },
+          {
+            "name": "Akylgali Aitaza"
+          },
+          {
+            "name": "Przemys{\\l}aw Spurek"
+          },
+          {
+            "name": "Paul Swoboda"
+          }
+        ],
+        "categories": [
+          "cs.CL",
+          "cs.AI"
+        ],
+        "primaryCategory": "cs.CL",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.05872",
+        "pdfUrl": "https://arxiv.org/pdf/2608.05872",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "architecture-design",
+        "total": 15.5,
+        "breakdown": {
+          "category": 5.5,
+          "titleKeyword": 3,
+          "abstractKeyword": 1,
+          "phrase": 0,
+          "novelty": 1,
+          "experimentalRigor": 1,
+          "resultEvidence": 2,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "transformer"
+        ],
+        "matchedCategories": [
+          "cs.AI",
+          "cs.CL"
+        ],
+        "explanation": [
+          "primary category cs.CL (+4)",
+          "title keywords transformer (+3)",
+          "abstract keywords transformer (+1)",
+          "novelty evidence (+1)",
+          "experimental rigor evidence (+1)",
+          "quantitative result evidence (+2)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "MACRO 将冻结 LLM 的层执行路径建模为上下文相关马尔可夫策略，无需改权重即可学习任务专属 skip/repeat/residual-add 路由，并用 top-k Viterbi 解码高效搜索。",
+        "motivation": [
+          "标准 LLM 按固定顺序逐层前向，忽略通过跳层、重复层或回退重算等动态路径提升推理能力的空间。",
+          "已有动态路由常需更新权重、对每个测试样本做昂贵搜索，或在推理时依赖 ground-truth 标签，工程成本高。",
+          "Dr.LLM 依赖 MCTS 离线生成监督并训练路由器；Neuroanatomy 等穷举搜索在复杂路由空间下计算不可行。",
+          "论文示例：Qwen3-1.7B 在 GSM8K 上仅改变执行顺序（L7 回退至 L3 再重算），准确率可由 43.44% 升至 69.52%，权重完全不变。"
+        ],
+        "method": [
+          "将层路由形式化为离散随机过程：状态含当前层索引、剩余计算预算、位移方向与算子上下文；动作含邻近层跳转、重复先前层、残差 hidden state 相加及重接标准后缀。",
+          "每个任务学习单一全局马尔可夫转移分布，在训练子集上用分布估计算法迭代更新，并配合 replay buffer 稳定收敛；不对 LLM 做反向传播或权重更新。",
+          "训练结束后停止探索，用带结构可行性掩码的 top-k Viterbi 算法多项式时间解码高概率合法路由程序。",
+          "在 held-out 验证集上选取最优路由，测试时对全体样本统一部署该固定程序，无需逐样本 test-time 搜索或辅助神经网络路由器。"
+        ],
+        "experimentSetup": [
+          "模型：Qwen3-1.7B/4B/8B、Qwen3-14B（4-bit）、Mixtral-8x7B-Instruct（4-bit）、DeepSeek-R1-Distill-Llama-8B、Llama-3.2-3B-Instruct；权重冻结，部分为量化模型。",
+          "基准共 13 项：GSM8K、MATH500、MedQA、OpenBookQA、SciQ、MMLU-Pro、SVAMP、ASDiv、MAWPS、GSM8K-Hard、GSM8K-Plus、MS-Arith、Obj-Count，覆盖推理与知识问答。",
+          "对比基线包括标准顺序前向、Dr.LLM 及扩展动作空间的 Dr.LLM+Ext；报告 MACRO、MACRO（top-1）、MACRO（no Vit.）等变体。",
+          "推理开销评测：Qwen3-1.7B 在单张 A40 上、每基准 64 条样本、两阶段 400/128 token 贪心解码，比较标准路径与 MACRO 路径的延迟与峰值显存。"
+        ],
+        "results": [
+          "相对未路由基线平均准确率提升 +5.0%；相对最佳动态路由 Dr.LLM 提升 +7.2%；相对同等动作空间的 Dr.LLM+Ext 仍高 +1.5%。",
+          "路由搜索时间相对 Dr.LLM 降低 9.4×：六个共享模型设置上每基准平均由 14.8 小时降至 1.6 小时。",
+          "小模型增益最大：Qwen3-1.7B 上 MACRO 平均 63.03%，基线 50.35%；Qwen3-14B（4-bit）平均 79.29% vs 基线 78.52%。",
+          "典型单任务跃升：Qwen3-1.7B 在 GSM8K 43.44%→69.52%（+26.08，28→33 层调用）；GSM8K-Plus +24.40；MS-Arith +65.00；但 MATH500 等多基准最优路由仍为 standard forward pass（增益 0）。",
+          "Qwen3-1.7B 推理代价：13 基准平均延迟 +16.1%、峰值显存 +4.6%（约 +335 MB），以略增算力换取准确率提升。"
+        ],
+        "trainingResources": [
+          "路由搜索耗时（已披露）：六个共享模型设置上每基准平均 1.6 小时（Dr.LLM 为 14.8 小时）；论文未披露该搜索所用 GPU 型号、数量及总 GPU 时。",
+          "MACRO 策略为轻量马尔可夫转移矩阵，训练阶段不对 LLM 反向传播、不更新预训练权重；论文未披露 Markov 策略迭代的样本量、轮数或具体训练时长。",
+          "推理评测硬件（已披露）：单张 A40 GPU，batched greedy decoding，每基准 64 测试样本。",
+          "代码已开源：https://github.com/Batorskq/MACRO；论文未披露路由训练或全实验的总算力预算。"
+        ],
+        "limitations": [
+          "并非所有基准均受益：Qwen3-4B/8B 等在 MATH500、MedQA、OpenBookQA 等任务上最优路由仍为标准前向，MACRO 增益为 0。",
+          "准确路由常以额外层调用为代价（如 GSM8K 28→33 层），带来 route-dependent 的计算溢价；Qwen3-1.7B 平均延迟约 +16%、显存约 +4.6%。",
+          "框架为每任务学习一条全局固定路由，非输入自适应逐样本路由，对异质样本混合任务可能次优。",
+          "依赖训练/验证集反馈选路，泛化到新分布或零样本场景的能力论文未系统分析；可行性掩码也约束了可搜索的路由空间。"
+        ],
+        "significance": "证明在不修改预训练参数的前提下，仅重排 transformer 层执行程序即可显著提升多类推理与知识基准表现，尤其对小模型效果明显。；以马尔可夫链 + 精确 Viterbi 解码替代 MCTS/逐样本 ground-truth 搜索，在准确率优于 Dr.LLM 的同时将路由搜索成本降低约一个数量级。；方法与冻结及量化 LLM 兼容，为动态深度/层路由提供参数高效、可多项式时间解码的实用范式。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:05:05.622Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    },
+    {
+      "paper": {
+        "arxivId": "2608.06252",
+        "baseArxivId": "2608.06252",
+        "title": "Toward Deployable Bangla Sign Language Recognition with Expert-Validated Data and a Lightweight Attention-Based Model",
+        "abstract": "Abstract: Deaf and hard-of-hearing people in Bangladesh communicate mainly through Bangla Sign Language (BdSL). Automatic BdSL recognition on personal devices could widen access to education and services. Existing systems use controlled-setting datasets without expert verification and heavyweight pretrained backbones unsuited to on-device use. We introduce RSBdSL38, 10,874 expert-validated images spanning all 38 BdSL hand signs, representing the 51 letters of the Bangla alphabet, recorded from real signers at three special-needs schools across Bangladesh. We propose a lightweight attention based convolutional network of 298,470 parameters, built from grouped bottleneck residual blocks, channel and spatial attention, a multi-scale depthwise hand-feature block, dual pooling, and Swish activations. Trained from scratch, it attains 96.37% accuracy (95.72% +- 0.54% over five seeds), within 1.08 percentage points of the best of nine ImageNet-pretrained efficient architectures under an identical protocol, using 8.5 to 68x fewer parameters and 1.3 to 21.7x fewer MACs. Retrained, it reaches 92.95 to 98.33% on six public BdSL benchmarks, 97.04% on a merged corpus, and 76.25% zero-shot on BdSL-38. Removing any architectural stage costs 7.61 to 89.30 points, against at most 3.17 for the training recipe. Grad-CAM with deletion-insertion and weight-randomization checks confirms that predictions follow the signing hand. A signer-independent split holding out 6 of 36 signers yields 85.18%. Quantized to 0.48 MB, it runs at 3.98 ms per image within a 15.5 MB footprint on a commodity smartphone. Together, RSBdSL38 and our from-scratch model turn benchmark accuracy into deployable accessibility at a fraction of pretrained-backbone cost; dataset, code, and models are released.",
+        "authors": [
+          {
+            "name": "Saad Ahmed"
+          },
+          {
+            "name": "Md Khalid Syfullaha"
+          }
+        ],
+        "categories": [
+          "cs.CV",
+          "cs.AI"
+        ],
+        "primaryCategory": "cs.CV",
+        "announcedOn": "2026-08-07",
+        "releaseDate": "2026-08-07",
+        "announcementType": "new",
+        "releaseSourceUrl": "https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.LG+cs.MA+cs.HC+cs.RO+cs.CV+stat.ML",
+        "absUrl": "https://arxiv.org/abs/2608.06252",
+        "pdfUrl": "https://arxiv.org/pdf/2608.06252",
+        "source": "arxiv-rss"
+      },
+      "score": {
+        "domainId": "architecture-design",
+        "total": 15.5,
+        "breakdown": {
+          "category": 5.5,
+          "titleKeyword": 3,
+          "abstractKeyword": 1,
+          "phrase": 0,
+          "novelty": 1,
+          "experimentalRigor": 2,
+          "resultEvidence": 1,
+          "resourceDisclosure": 0,
+          "negative": 0,
+          "recency": 2
+        },
+        "matchedKeywords": [
+          "attention"
+        ],
+        "matchedCategories": [
+          "cs.AI",
+          "cs.CV"
+        ],
+        "explanation": [
+          "primary category cs.CV (+4)",
+          "title keywords attention (+3)",
+          "abstract keywords attention (+1)",
+          "novelty evidence (+1)",
+          "experimental rigor evidence (+2)",
+          "quantitative result evidence (+1)",
+          "recency 0 day(s) (+2)"
+        ],
+        "algorithmVersion": "pre-rank-v4-bias-translation-exclusions"
+      },
+      "summary": {
+        "oneLiner": "发布专家验证数据集 RSBdSL38，并提出仅 298,470 参数的轻量注意力 CNN，从零训练即可逼近 ImageNet 预训练高效骨干，并可在普通智能手机上量化部署。",
+        "motivation": [
+          "孟加拉约 250–300 万听障人士日常使用 Bangla 手语（BdSL），但认证手语翻译员稀缺且集中于城市，个人设备上的自动识别可替代缺失的口译服务。",
+          "现有 BdSL 公开数据集多由少量非手语志愿者在受控环境采集，缺乏完整语言学专家验证，泛化到真实场景受限。",
+          "既有 BdSL 识别方法普遍依赖 ImageNet 预训练 heavyweight 骨干或集成模型，参数量与 MAC 过高，难以在中端 Android 手机、平板或低成本嵌入式设备上离线运行。",
+          "BdSL 38 类手语对应 51 个字母，类间差异常仅为一根手指弯曲或掌心朝向微调，且手型、肤色、视角变化大，识别器必须同时学会“看哪里”和“看什么”。"
+        ],
+        "method": [
+          "构建 RSBdSL38：10,874 张专家验证图像，覆盖全部 38 类 BdSL 手语（对应 51 个孟加拉文字母），由 36 名真实手语者在孟加拉 3 所特殊需求学校采集。",
+          "提出轻量注意力 CNN（298,470 参数）：224×224 输入，含分组瓶颈残差块、CBAM 通道/空间注意力、多尺度 depthwise 手部特征块、双池化头（GAP+GMP）及 Swish 激活，四阶段通道宽度 32/64/96/128。",
+          "从零训练，无 ImageNet 预训练；在 RSBdSL38 上与 9 种 ImageNet 预训练高效架构（MobileNetV4、MobileViT、EfficientNetV2 等）采用相同协议对比。",
+          "系统消融：14 种 stage 移除组合及参数量匹配的组件对照（数据增强、dropout、Swish vs ReLU）；Grad-CAM 结合 deletion–insertion 忠实度与权重随机化检验解释可信度。",
+          "部署向评估：6/36 手语者 signer-independent 留出、对 BdSL-38 零样本迁移，并在普通 Android 智能手机上测量量化模型大小、延迟与内存占用。"
+        ],
+        "experimentSetup": [
+          "主实验在 RSBdSL38 上按相同训练/测试划分，报告单次 96.37% 及 5 个随机种子均值 95.72%±0.54%。",
+          "跨数据集：同一架构分别在 KU-BdSL、BdSL47、Shongket、BdSL-38、BAUST Lipi、BdSL36 六个公开基准及四数据集合并语料上从头重训。",
+          "泛化协议：RSBdSL38 训练模型直接推理 BdSL-38 全量分布（12,581 张，38 类标签一一对应）以测零样本迁移；另留 6 名手语者做 signer-independent 测试。",
+          "解释性评估：200 张测试图像上计算 Grad-CAM/Grad-CAM++ 的 deletion/insertion AUC，并对分类头与末 stage 级联权重随机化做 sanity check。",
+          "端侧测试：模型量化后在普通 Android 智能手机上测量单帧推理延迟与总内存占用。"
+        ],
+        "results": [
+          "RSBdSL38 测试准确率 96.37%（5 seed 均值 95.72%±0.54%），距 9 个预训练高效架构最优结果仅差 1.08 个百分点，参数量少 8.5–68 倍、MAC 少 1.3–21.7 倍。",
+          "跨数据集重训准确率 92.95%–98.33%（KU-BdSL 98.33%、BdSL47 97.81%、合并语料 97.04%、RSBdSL38 96.37%、Shongket 95.15%、BdSL-38 94.57%、BdSL36 92.95%）；BdSL-38 零样本 76.25%（macro F1 76.00%），较同架构重训低 18.32 个百分点。",
+          "架构消融：移除任一 stage 准确率下降 7.61–89.30 个百分点；训练配方消融最多降 3.17 个百分点（去增强 +3.17 pp，去 dropout +1.63 pp，ReLU 替 Swish +0.99 pp）。",
+          "Signer-independent（留出 6/36 手语者）准确率 85.18%；Grad-CAM deletion AUC 0.081、insertion AUC 0.888，显著优于随机基线，权重随机化后热力图坍缩，表明预测依赖所学权重而非背景。",
+          "量化模型 0.48 MB，在普通智能手机上单张 3.98 ms、总占用 15.5 MB；BdSL-38 上单模型 94.57%，低于五模型预训练集成 96.62% 但参数量仅约 0.30M。"
+        ],
+        "trainingResources": [
+          "模型规模 298,470 可训练参数（另含 6,208 个 BN 运行统计非训练参数）；完整模型 V0 约训练 192 epoch（消融变体 111–234 epoch 不等）。",
+          "主结果报告 5 个随机种子重复实验；RSBdSL38 含 36 名手语者、10,874 张图像、38 类标签。",
+          "论文未披露 GPU/TPU 型号、GPU 数量、总训练时长、batch size 及优化器超参等硬件与算力细节。"
+        ],
+        "limitations": [
+          "零样本跨语料迁移仅 76.25%，说明对新采集者、相机与环境的域偏移敏感，部署到新数据源需适配或重训。",
+          "Signer-independent 评估降至 85.18%，手语者间肤色、手型与 articulation 差异仍构成显著 within-class 变异。",
+          "Stage 4 特征图为 14×14，Grad-CAM 每格对应 16×16 像素块，难以分辨单指边界；主要误分类（如 class 12↔36）源于视觉近邻而非背景干扰。",
+          "RSBdSL38 虽经专家验证且来自真实学校场景，但 36 名手语者与 3 所学校仍有限，未覆盖更开放的无控环境与连续语句级 BdSL 识别。"
+        ],
+        "significance": "RSBdSL38 填补 BdSL 领域缺乏大规模、专家语言学验证、真实手语者采集数据的空白，并公开数据集、代码与模型权重。；证明精心设计的轻量从零训练 CNN 可在 BdSL 字母级识别上逼近 ImageNet 预训练高效骨干，以数量级更少的参数与 MAC 实现可部署精度。；引入 BdSL 文献中少见的 signer-independent、零样本跨语料与端侧量化延迟/内存等部署向指标，推动基准准确率转化为实际无障碍应用。"
+      },
+      "ideas": [],
+      "refinements": [],
+      "references": [],
+      "provenance": [
+        {
+          "stage": "summarization",
+          "source": "Cursor SDK",
+          "retrievedAt": "2026-08-07T04:05:05.622Z",
+          "model": "composer-2.5",
+          "promptVersion": "paper-summary-v5-bullets-zh-cn",
+          "notes": [
+            "仅生成论文精读摘要，不生成研究构想、改进、先前工作检索或模型辩论。"
+          ]
+        }
+      ]
+    }
+  ],
+  "domainResearch": [],
+  "provenance": [
+    {
+      "stage": "ingestion",
+      "source": "arXiv RSS/API",
+      "retrievedAt": "2026-08-07T04:05:05.622Z",
+      "inputHash": "2ec15c7e00281ea63e30983405aa97836254dbccc9647a7cc6c667d1f29375c3",
+      "notes": [
+        "严格使用 2026-08-07 的 arXiv 发布批次（America/New_York）；item.pubDate 必须等于 reportDate；只纳入 new/cross，排除 replace/replace-cross。",
+        "评分与配额前执行安全攻防、云计算、bias/fairness 与语言翻译主题硬排除；分类统计：{\"safetySecurity\":30,\"cloudComputing\":0,\"biasFairness\":7,\"languageTranslation\":2}；reason code：{\"DEFENSE_MITIGATION\":9,\"BIAS_SEXISM_FAIRNESS\":7,\"AI_SAFETY_ALIGNMENT\":6,\"SECURITY_CYBERSECURITY\":19,\"LANGUAGE_TRANSLATION\":2,\"JAILBREAK_PROMPT_INJECTION\":5,\"ATTACK_ADVERSARIAL\":5}。",
+        "仅使用摘要模型 composer-2.5，每篇论文至多一次摘要调用；不生成 research idea、refinement、prior-art 或 debate。",
+        "用量：9 次调用，304128 个 token。",
+        "流水线版本：daily-paper-summary-v7-topic-preferences；提示词版本：paper-summary-v5-bullets-zh-cn。"
+      ]
+    }
+  ],
+  "warnings": []
+}
